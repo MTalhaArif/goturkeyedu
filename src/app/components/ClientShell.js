@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "@/app/context/LanguageContext";
 import { usePathname } from "next/navigation";
 
 function Header() {

@@ -1,5 +1,5 @@
 "use client";
-import InfoPageLayout from "../../components/InfoPageLayout";
+import InfoPageLayout from "@/app/components/InfoPageLayout";
 
 export default function AccommodationPage() {
   return (

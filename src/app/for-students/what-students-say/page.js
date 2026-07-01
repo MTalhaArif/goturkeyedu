@@ -1,5 +1,5 @@
 "use client";
-import InfoPageLayout from "../../components/InfoPageLayout";
+import InfoPageLayout from "@/app/components/InfoPageLayout";
 export default function WhatStudentsSayPage() {
   const students=[
     {name:"Ahmed Al-Mansouri",country:"Iraq 🇮🇶",uni:"Istanbul Technical University",program:"Computer Engineering",year:"3rd Year",quote:"Studying at ITU has been the best decision of my life. The engineering faculty is world-class and the campus life is incredible. İstanbul itself is a city like no other — I feel completely at home here despite being thousands of miles from Iraq.",avatar:"A"},

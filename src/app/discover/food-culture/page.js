@@ -1,5 +1,5 @@
 "use client";
-import InfoPageLayout from "../../components/InfoPageLayout";
+import InfoPageLayout from "@/app/components/InfoPageLayout";
 export default function FoodCulturePage() {
   const dishes=[{name:"Kebap",desc:"Grilled meat dishes — including Adana kebap, Urfa kebap, şiş kebap, and döner — are the heart of Turkish cuisine.",emoji:"🍢"},{name:"Pide & Lahmacun",desc:"Turkish pizza variants, pide is a boat-shaped flatbread with various toppings, lahmacun is a thin crispy flatbread with spiced minced meat.",emoji:"🫓"},{name:"Menemen",desc:"A popular Turkish breakfast dish made of eggs, tomatoes, peppers, and spices, cooked in olive oil.",emoji:"🍳"},{name:"Baklava",desc:"Layers of thin pastry filled with crushed pistachios or walnuts and soaked in sweet syrup. The finest baklava comes from Gaziantep.",emoji:"🍮"},{name:"Çay (Tea)",desc:"Turkish tea is central to social life. Served in small tulip-shaped glasses, it is offered everywhere — in homes, shops, and offices.",emoji:"🫖"},{name:"Simit",desc:"A circular bread encrusted with sesame seeds, simit is sold on every street corner and is the quintessential Turkish snack.",emoji:"🥯"}];
   return (

@@ -1,5 +1,5 @@
 "use client";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function InfoPageLayout({ title, breadcrumb, icon, children, sidebar }) {
   const { t } = useLanguage();

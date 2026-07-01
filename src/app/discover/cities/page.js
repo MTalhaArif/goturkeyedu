@@ -1,5 +1,5 @@
 "use client";
-import InfoPageLayout from "../../components/InfoPageLayout";
+import InfoPageLayout from "@/app/components/InfoPageLayout";
 
 const cities = [
   { name: "İstanbul", emoji: "🌉", pop: "15.8M", unis: "50+", desc: "Turkey's largest city straddling two continents, İstanbul is the cultural, financial, and historical heart of the country. Home to iconic landmarks like the Hagia Sophia, Topkapı Palace, and the Grand Bazaar, it offers an unmatched mix of ancient history and modern urban life. Students enjoy a vibrant nightlife, world-class cuisine, and a thriving arts scene." },

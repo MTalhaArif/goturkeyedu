@@ -1,5 +1,5 @@
 "use client";
-import InfoPageLayout from "../../components/InfoPageLayout";
+import InfoPageLayout from "@/app/components/InfoPageLayout";
 
 const news = [
   { date: "December 10, 2024", title: "YÖK Announces Record Number of International Students in 2024", category: "Announcement", body: "The Council of Higher Education (YÖK) announced that the number of international students studying in Türkiye has reached a record high of 240,000 students from 180 countries in the 2024-2025 academic year. This represents a 15% increase from the previous year." },

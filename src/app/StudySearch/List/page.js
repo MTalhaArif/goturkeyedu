@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { universities, uniqueCities } from "../../data/universities";
-import { useLanguage } from "../../context/LanguageContext";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 export default function StudySearchList() {
   const { t } = useLanguage();

@@ -1,5 +1,5 @@
 "use client";
-import InfoPageLayout from "../../components/InfoPageLayout";
+import InfoPageLayout from "@/app/components/InfoPageLayout";
 export default function CulturePage() {
   return (
     <InfoPageLayout title="Culture" breadcrumb="Discover Türkiye" icon="🎨" sidebar={true}>

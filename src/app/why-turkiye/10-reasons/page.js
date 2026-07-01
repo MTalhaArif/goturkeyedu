@@ -1,6 +1,6 @@
 "use client";
-import InfoPageLayout from "../../components/InfoPageLayout";
-import { useLanguage } from "../../context/LanguageContext";
+import InfoPageLayout from "@/app/components/InfoPageLayout";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 const dict = {
   EN: {
