@@ -480,8 +480,44 @@ export default function AdminDashboard() {
             <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 16 }}>☰</button>
             <h1 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: 0 }}>Go Turkey And Study Academy</h1>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-            <button onClick={handleLogout} style={{ background: "rgba(224, 60, 49, 0.1)", color: "#E03C31", border: "1px solid rgba(224, 60, 49, 0.2)", padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", gap: 8 }}><span>🚪</span> LOGOUT</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+                👤
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Welcome,</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginTop: -2 }}>Super Admin</span>
+              </div>
+            </div>
+            
+            <button 
+              onClick={handleLogout} 
+              title="Logout"
+              style={{ 
+                background: "rgba(224, 60, 49, 0.1)", 
+                color: "#E03C31", 
+                border: "1px solid rgba(224, 60, 49, 0.2)", 
+                padding: "10px 20px", 
+                borderRadius: 12, 
+                fontSize: 14, 
+                fontWeight: 800, 
+                cursor: "pointer", 
+                display: "flex", 
+                alignItems: "center", 
+                gap: 10,
+                transition: "all 0.2s"
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#E03C31"; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "scale(1.05)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(224, 60, 49, 0.1)"; e.currentTarget.style.color = "#E03C31"; e.currentTarget.style.transform = "scale(1)"; }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              LOGOUT
+            </button>
           </div>
         </header>
 
