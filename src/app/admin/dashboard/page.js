@@ -431,12 +431,28 @@ export default function AdminDashboard() {
     <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "'Inter', sans-serif" }}>
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
       `}} />
       <div style={{ width: sidebarOpen ? 280 : 80, background: "#0f172a", color: "#94a3b8", display: "flex", flexDirection: "column", transition: "width 0.3s", flexShrink: 0, position: "sticky", top: 0, height: "100vh", overflow: "hidden", boxShadow: "4px 0 24px rgba(0,0,0,0.1)" }}>
         <div style={{ padding: "24px 20px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <div style={{ fontSize: 28, flexShrink: 0 }}>🇹🇷</div>
           {sidebarOpen && <div style={{ color: "white", fontWeight: 800, fontSize: 18, whiteSpace:"nowrap" }}><span style={{ color: "#E03C31" }}>Go</span>Turkey <span style={{ fontWeight: 400 }}>Admin</span></div>}
         </div>
+
+        {/* User Panel */}
+        {sidebarOpen && (
+          <div style={{ padding: "20px", display: "flex", alignItems: "center", gap: 14, borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.15)" }}>
+            <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, #E03C31 0%, #b91c1c 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "white", flexShrink: 0, border: "2px solid rgba(255,255,255,0.1)", boxShadow: "0 4px 10px rgba(0,0,0,0.3)" }}>
+              👤
+            </div>
+            <div style={{ overflow: "hidden" }}>
+              <div style={{ color: "white", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{user.name}</div>
+              <div style={{ color: "#10b981", fontSize: 12, fontWeight: 700, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ animation: "pulse 2s infinite" }}>●</span> Online
+              </div>
+            </div>
+          </div>
+        )}
         <ul style={{ listStyle: "none", padding: "10px 12px", margin: 0, flex: 1, overflowY: "auto", fontSize: 14 }}>
           {sidebarOpen && <li style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "1px" }}>Main Menu</li>}
           {SIDEBAR_MENUS.map((menu) => {
