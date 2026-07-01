@@ -2,26 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/app/context/LanguageContext";
-
-const SIDEBAR_MENUS = [
-  { id: "dashboard", icon: "📊", label: "Dashboard Home" },
-  { id: "front_office", icon: "🏢", label: "Front Office" },
-  { id: "student_info", icon: "👥", label: "Student Information" },
-  { id: "fees", icon: "💰", label: "Fees Collection" },
-  { id: "exams", icon: "📝", label: "Examinations" },
-  { id: "online_exams", icon: "💻", label: "Online Examinations" },
-  { id: "lesson_plan", icon: "📅", label: "Lesson Plan" },
-  { id: "academics", icon: "🎓", label: "Academics" },
-  { id: "hr", icon: "🤝", label: "Human Resource" },
-  { id: "online_course", icon: "▶️", label: "Online Course" },
-  { id: "zoom", icon: "📹", label: "Zoom Live Classes" },
-  { id: "download", icon: "⬇️", label: "Download Center" },
-  { id: "certificate", icon: "📜", label: "Certificate" },
-  { id: "cms", icon: "🖥️", label: "Front CMS" },
-  { id: "alumni", icon: "🎓", label: "Alumni" },
-  { id: "reports", icon: "📊", label: "Reports" },
-  { id: "settings", icon: "⚙️", label: "System Settings" }
-];
+import { adminDict } from "@/app/data/adminTranslations";
 
 const MOCK_DATA = {
   students: [
@@ -95,8 +76,29 @@ export default function AdminDashboard() {
 
   if (!user) return <div style={{ minHeight: "100vh", background: "#f8fafc" }}></div>;
 
-  // -- COMPONENT FACTORIES FOR EACH MODULE --
+  const t = adminDict[lang] || adminDict["EN"];
 
+  const SIDEBAR_MENUS = [
+    { id: "dashboard", icon: "📊", label: t.sidebar.dashboard },
+    { id: "front_office", icon: "🏢", label: t.sidebar.front_office },
+    { id: "student_info", icon: "👥", label: t.sidebar.student_info },
+    { id: "fees", icon: "💰", label: t.sidebar.fees },
+    { id: "exams", icon: "📝", label: t.sidebar.exams },
+    { id: "online_exams", icon: "💻", label: t.sidebar.online_exams },
+    { id: "lesson_plan", icon: "📅", label: t.sidebar.lesson_plan },
+    { id: "academics", icon: "🎓", label: t.sidebar.academics },
+    { id: "hr", icon: "🤝", label: t.sidebar.hr },
+    { id: "online_course", icon: "▶️", label: t.sidebar.online_course },
+    { id: "zoom", icon: "📹", label: t.sidebar.zoom },
+    { id: "download", icon: "⬇️", label: t.sidebar.download },
+    { id: "certificate", icon: "📜", label: t.sidebar.certificate },
+    { id: "cms", icon: "🖥️", label: t.sidebar.cms },
+    { id: "alumni", icon: "🎓", label: t.sidebar.alumni },
+    { id: "reports", icon: "📊", label: t.sidebar.reports },
+    { id: "settings", icon: "⚙️", label: t.sidebar.settings }
+  ];
+
+  // -- COMPONENT FACTORIES FOR EACH MODULE --
   const HeaderControls = ({ title, btnText }) => (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, animation: "fadeIn 0.3s" }}>
       <h2 style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", margin: 0 }}>{title}</h2>
@@ -110,7 +112,7 @@ export default function AdminDashboard() {
 
   const CriteriaFilter = ({ fields }) => (
     <div style={{ background: "white", borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9", marginBottom: 24, animation: "fadeIn 0.3s" }}>
-      <h4 style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 16 }}>Select Criteria</h4>
+      <h4 style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 16 }}>{t.common.selectCriteria}</h4>
       <div style={{ display: "flex", gap: 16 }}>
         {fields.map((f, i) => (
           f.type === "select" ? (
@@ -121,7 +123,7 @@ export default function AdminDashboard() {
             <input key={i} type={f.type || "text"} placeholder={f.placeholder} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none" }} />
           )
         ))}
-        <button style={{ background: "#0f172a", color: "white", border: "none", padding: "0 24px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>Search</button>
+        <button style={{ background: "#0f172a", color: "white", border: "none", padding: "0 24px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>{t.common.search}</button>
       </div>
     </div>
   );
@@ -130,11 +132,11 @@ export default function AdminDashboard() {
     <div style={{ background: "white", borderRadius: 16, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9", overflow: "hidden", padding: 24, animation: "fadeIn 0.3s" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
         <thead>
-          <tr style={{ borderBottom: "2px solid #e2e8f0", color: "#64748b", textAlign: "left" }}>
+          <tr style={{ borderBottom: "2px solid #e2e8f0", color: "#64748b", textAlign: "left", direction: lang === "AR" ? "rtl" : "ltr" }}>
             {columns.map((c, i) => <th key={i} style={{ padding: "12px 8px" }}>{c}</th>)}
           </tr>
         </thead>
-        <tbody>
+        <tbody style={{ direction: lang === "AR" ? "rtl" : "ltr" }}>
           {data.map((row, i) => (
             <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
               {renderRow(row)}
@@ -146,14 +148,13 @@ export default function AdminDashboard() {
   );
 
   // -- MODULE RENDERERS --
-
   const renderDashboard = () => (
     <div style={{ animation: "fadeIn 0.3s" }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, marginBottom: 24 }}>
         {[
-          { title: "Fees Awaiting Payment", val: "0/0", icon: "💰", color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)" },
-          { title: "Converted Leads", val: "0/0", icon: "📈", color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
-          { title: "Staff Present Today", val: "0/14", icon: "👥", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" }
+          { title: t.dashboard.feesAwaiting, val: "0/0", icon: "💰", color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)" },
+          { title: t.dashboard.leads, val: "0/0", icon: "📈", color: "#10b981", bg: "rgba(16, 185, 129, 0.1)" },
+          { title: t.dashboard.staffPresent, val: "0/14", icon: "👥", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)" }
         ].map((stat, i) => (
           <div key={i} style={{ background: "white", borderRadius: 20, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 20 }}>
             <div style={{ width: 64, height: 64, borderRadius: 16, background: stat.bg, color: stat.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, flexShrink: 0 }}>{stat.icon}</div>
@@ -166,10 +167,10 @@ export default function AdminDashboard() {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}>
         {[
-          { val: "0 UNPAID", label: "Fees Overview", color: "#ef4444" },
-          { val: "0 ACTIVE", label: "Enquiry Overview", color: "#10b981" },
-          { val: "₺0", label: "Monthly Fees Collection", color: "#3b82f6" },
-          { val: "78", label: "Total Students", color: "#f59e0b" }
+          { val: "0", label: t.dashboard.feesUnpaid, color: "#ef4444" },
+          { val: "0", label: t.dashboard.enquiryActive, color: "#10b981" },
+          { val: "₺0", label: t.dashboard.monthlyFees, color: "#3b82f6" },
+          { val: "78", label: t.dashboard.totalStudents, color: "#f59e0b" }
         ].map((w, i) => (
           <div key={i} style={{ background: "white", borderRadius: 20, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9", textAlign: "center" }}>
             <div style={{ fontSize: 24, fontWeight: 800, color: w.color, marginBottom: 8 }}>{w.val}</div>
@@ -182,10 +183,10 @@ export default function AdminDashboard() {
 
   const renderFrontOffice = () => (
     <>
-      <HeaderControls title="Admission Enquiry" btnText="+ Add Enquiry" />
-      <CriteriaFilter fields={[ { type: "select", placeholder: "Source" }, { type: "date" }, { type: "date" }, { type: "select", placeholder: "Status" } ]} />
+      <HeaderControls title={t.frontOffice.title} btnText={t.frontOffice.addBtn} />
+      <CriteriaFilter fields={[ { type: "select", placeholder: t.frontOffice.source }, { type: "text", placeholder: t.frontOffice.fromDate }, { type: "text", placeholder: t.frontOffice.toDate }, { type: "select", placeholder: t.common.status } ]} />
       <DataTable 
-        columns={["Name", "Phone", "Source", "Enquiry Date", "Next Follow Up", "Status", "Action"]} 
+        columns={t.frontOffice.cols} 
         data={MOCK_DATA.enquiries}
         renderRow={r => (
           <>
@@ -200,16 +201,16 @@ export default function AdminDashboard() {
 
   const renderFees = () => (
     <>
-      <HeaderControls title="Search Due Fees" />
-      <CriteriaFilter fields={[ { type: "select", placeholder: "Fees Group" }, { type: "select", placeholder: "Class" }, { type: "select", placeholder: "Section" } ]} />
+      <HeaderControls title={t.fees.title} />
+      <CriteriaFilter fields={[ { type: "select", placeholder: t.fees.group }, { type: "select", placeholder: t.studentInfo.class }, { type: "select", placeholder: t.studentInfo.section } ]} />
       <DataTable 
-        columns={["Student Name", "Fee Type", "Due Date", "Amount", "Balance", "Status", "Action"]} 
+        columns={t.fees.cols} 
         data={MOCK_DATA.fees}
         renderRow={r => (
           <>
             <td style={{ padding: "12px 8px", fontWeight: 600 }}>{r.name}</td><td>{r.feeType}</td><td>{r.dueDate}</td><td>{r.amount}</td><td style={{color:"#ef4444", fontWeight:600}}>{r.balance}</td>
             <td><span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 12, fontWeight: 700, background: r.status === "Paid" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: r.status === "Paid" ? "#10b981" : "#ef4444" }}>{r.status}</span></td>
-            <td><button style={{ background: "#E03C31", color: "white", border: "none", padding: "4px 12px", borderRadius: 4, cursor: "pointer", fontWeight:600, fontSize:12 }}>Collect</button></td>
+            <td><button style={{ background: "#E03C31", color: "white", border: "none", padding: "4px 12px", borderRadius: 4, cursor: "pointer", fontWeight:600, fontSize:12 }}>{t.fees.collect}</button></td>
           </>
         )}
       />
@@ -218,9 +219,9 @@ export default function AdminDashboard() {
 
   const renderExams = () => (
     <>
-      <HeaderControls title="Exam Schedule" btnText="+ Add Exam" />
+      <HeaderControls title={t.exams.title} btnText={t.exams.addBtn} />
       <DataTable 
-        columns={["Exam Name", "Group", "Subjects", "Date", "Status", "Action"]} 
+        columns={t.exams.cols} 
         data={MOCK_DATA.exams}
         renderRow={r => (
           <>
@@ -235,9 +236,9 @@ export default function AdminDashboard() {
 
   const renderOnlineExams = () => (
     <>
-      <HeaderControls title="Online Examinations" btnText="+ Add Online Exam" />
+      <HeaderControls title={t.onlineExams.title} btnText={t.onlineExams.addBtn} />
       <DataTable 
-        columns={["Exam Title", "Class", "Questions", "Duration", "Status", "Action"]} 
+        columns={t.onlineExams.cols} 
         data={MOCK_DATA.onlineExams}
         renderRow={r => (
           <>
@@ -252,10 +253,10 @@ export default function AdminDashboard() {
 
   const renderLessonPlan = () => (
     <>
-      <HeaderControls title="Manage Lesson Plan" btnText="+ Create Plan" />
-      <CriteriaFilter fields={[ { type: "select", placeholder: "Teacher" }, { type: "select", placeholder: "Class" }, { type: "select", placeholder: "Subject" } ]} />
+      <HeaderControls title={t.lessonPlan.title} btnText={t.lessonPlan.addBtn} />
+      <CriteriaFilter fields={[ { type: "select", placeholder: t.lessonPlan.teacher }, { type: "select", placeholder: t.studentInfo.class }, { type: "select", placeholder: t.lessonPlan.subject } ]} />
       <DataTable 
-        columns={["Day", "Subject", "Topic", "Teacher", "Time", "Action"]} 
+        columns={t.lessonPlan.cols} 
         data={MOCK_DATA.lessonPlans}
         renderRow={r => (
           <>
@@ -269,9 +270,9 @@ export default function AdminDashboard() {
 
   const renderAcademics = () => (
     <>
-      <HeaderControls title="Class Timetable & Assign" />
+      <HeaderControls title={t.academics.title} />
       <DataTable 
-        columns={["Class", "Section", "Subjects", "Class Teacher", "Students", "Action"]} 
+        columns={t.academics.cols} 
         data={MOCK_DATA.academics}
         renderRow={r => (
           <>
@@ -285,16 +286,16 @@ export default function AdminDashboard() {
 
   const renderHR = () => (
     <>
-      <HeaderControls title="Staff Directory" btnText="+ Add Staff" />
-      <CriteriaFilter fields={[ { type: "select", placeholder: "Role" }, { type: "text", placeholder: "Search By Keyword" } ]} />
+      <HeaderControls title={t.hr.title} btnText={t.hr.addBtn} />
+      <CriteriaFilter fields={[ { type: "select", placeholder: t.hr.role }, { type: "text", placeholder: t.common.searchKeyword } ]} />
       <DataTable 
-        columns={["Staff ID", "Name", "Role", "Department", "Phone", "Status", "Action"]} 
+        columns={t.hr.cols} 
         data={MOCK_DATA.hr}
         renderRow={r => (
           <>
             <td style={{ padding: "12px 8px", fontWeight: 600 }}>{r.id}</td><td style={{fontWeight:600}}>{r.name}</td><td>{r.role}</td><td>{r.dept}</td><td>{r.phone}</td>
             <td><span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 12, fontWeight: 700, background: "rgba(16,185,129,0.1)", color: "#10b981" }}>{r.status}</span></td>
-            <td><button style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", padding: "4px 8px", borderRadius: 4, cursor: "pointer" }}>Profile</button></td>
+            <td><button style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", padding: "4px 8px", borderRadius: 4, cursor: "pointer" }}>{t.hr.profile}</button></td>
           </>
         )}
       />
@@ -303,9 +304,9 @@ export default function AdminDashboard() {
 
   const renderOnlineCourse = () => (
     <>
-      <HeaderControls title="Course List" btnText="+ Add Course" />
+      <HeaderControls title={t.onlineCourse.title} btnText={t.onlineCourse.addBtn} />
       <DataTable 
-        columns={["Course Title", "Teacher", "Price", "Students Enrolled", "Status", "Action"]} 
+        columns={t.onlineCourse.cols} 
         data={MOCK_DATA.courses}
         renderRow={r => (
           <>
@@ -320,15 +321,15 @@ export default function AdminDashboard() {
 
   const renderZoom = () => (
     <>
-      <HeaderControls title="Zoom Live Classes" btnText="+ Add Live Class" />
+      <HeaderControls title={t.zoom.title} btnText={t.zoom.addBtn} />
       <DataTable 
-        columns={["Class Title", "Date", "Time", "Duration", "Created By", "Status", "Action"]} 
+        columns={t.zoom.cols} 
         data={MOCK_DATA.zoom}
         renderRow={r => (
           <>
             <td style={{ padding: "12px 8px", fontWeight: 600 }}>{r.title}</td><td>{r.date}</td><td>{r.time}</td><td>{r.duration}</td><td>{r.staff}</td>
             <td><span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 12, fontWeight: 700, background: "rgba(245,158,11,0.1)", color: "#f59e0b" }}>{r.status}</span></td>
-            <td><button style={{ background: "#3b82f6", color: "white", border: "none", padding: "4px 12px", borderRadius: 4, cursor: "pointer", fontWeight:600, fontSize:12 }}>Start Meeting</button></td>
+            <td><button style={{ background: "#3b82f6", color: "white", border: "none", padding: "4px 12px", borderRadius: 4, cursor: "pointer", fontWeight:600, fontSize:12 }}>{t.zoom.start}</button></td>
           </>
         )}
       />
@@ -337,9 +338,9 @@ export default function AdminDashboard() {
 
   const renderDownload = () => (
     <>
-      <HeaderControls title="Upload Content" btnText="+ Upload" />
+      <HeaderControls title={t.download.title} btnText={t.download.addBtn} />
       <DataTable 
-        columns={["Content Title", "Type", "Date", "Size", "Action"]} 
+        columns={t.download.cols} 
         data={MOCK_DATA.downloads}
         renderRow={r => (
           <>
@@ -353,15 +354,15 @@ export default function AdminDashboard() {
 
   const renderCertificate = () => (
     <>
-      <HeaderControls title="Student Certificate" btnText="+ Generate Certificate" />
+      <HeaderControls title={t.certificate.title} btnText={t.certificate.addBtn} />
       <DataTable 
-        columns={["Certificate Name", "Background Image", "Status", "Action"]} 
+        columns={t.certificate.cols} 
         data={MOCK_DATA.certificates}
         renderRow={r => (
           <>
             <td style={{ padding: "12px 8px", fontWeight: 600 }}>{r.name}</td><td>{r.bg}</td>
             <td><span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 12, fontWeight: 700, background: "rgba(16,185,129,0.1)", color: "#10b981" }}>{r.status}</span></td>
-            <td><button style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", padding: "4px 8px", borderRadius: 4, cursor: "pointer" }}>Preview</button></td>
+            <td><button style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", padding: "4px 8px", borderRadius: 4, cursor: "pointer" }}>{t.certificate.preview}</button></td>
           </>
         )}
       />
@@ -370,9 +371,9 @@ export default function AdminDashboard() {
 
   const renderCMS = () => (
     <>
-      <HeaderControls title="Event List" btnText="+ Add Event" />
+      <HeaderControls title={t.cms.title} btnText={t.cms.addBtn} />
       <DataTable 
-        columns={["Event Title", "Venue", "Start Date", "End Date", "Action"]} 
+        columns={t.cms.cols} 
         data={MOCK_DATA.events}
         renderRow={r => (
           <>
@@ -386,28 +387,28 @@ export default function AdminDashboard() {
 
   const renderStudentInfo = () => (
     <div style={{ animation: "fadeIn 0.3s" }}>
-      <HeaderControls title="Student Details" />
+      <HeaderControls title={t.studentInfo.title} />
       <div style={{ background: "white", borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9", marginBottom: 24 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
           <div>
-            <h4 style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 16 }}>Select Criteria</h4>
+            <h4 style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 16 }}>{t.common.selectCriteria}</h4>
             <div style={{ display: "flex", gap: 12 }}>
-              <select style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none" }}><option>Class</option></select>
-              <select style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none" }}><option>Section</option></select>
-              <button style={{ background: "#0f172a", color: "white", border: "none", padding: "0 24px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>Search</button>
+              <select style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none" }}><option>{t.studentInfo.class}</option></select>
+              <select style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none" }}><option>{t.studentInfo.section}</option></select>
+              <button style={{ background: "#0f172a", color: "white", border: "none", padding: "0 24px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>{t.common.search}</button>
             </div>
           </div>
           <div style={{ borderLeft: "1px solid #e2e8f0", paddingLeft: 32 }}>
-            <h4 style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 16 }}>Search By Keyword</h4>
+            <h4 style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 16 }}>{t.common.searchKeyword}</h4>
             <div style={{ display: "flex", gap: 12 }}>
-              <input type="text" placeholder="Search By Student Name..." style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none" }} />
-              <button style={{ background: "#0f172a", color: "white", border: "none", padding: "0 24px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>Search</button>
+              <input type="text" placeholder={t.studentInfo.searchPlaceholder} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none" }} />
+              <button style={{ background: "#0f172a", color: "white", border: "none", padding: "0 24px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>{t.common.search}</button>
             </div>
           </div>
         </div>
       </div>
       <DataTable 
-        columns={["Admission No", "Student Name", "Class", "DOB", "Gender", "Mobile", "Paid", "Action"]} 
+        columns={t.studentInfo.cols} 
         data={MOCK_DATA.students}
         renderRow={s => (
           <>
@@ -420,12 +421,11 @@ export default function AdminDashboard() {
     </div>
   );
 
-  // Fallback for settings/reports
   const renderFallback = (title) => (
     <div style={{ animation: "fadeIn 0.3s", height: 400, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", color: "#94a3b8" }}>
       <span style={{ fontSize: 64, marginBottom: 16 }}>⚙️</span>
-      <h2 style={{ color: "#0f172a" }}>{title} configuration</h2>
-      <p>This administrative module is active and awaiting backend parameters.</p>
+      <h2 style={{ color: "#0f172a" }}>{title} {t.fallback.config}</h2>
+      <p>{t.fallback.msg}</p>
     </div>
   );
 
@@ -436,38 +436,38 @@ export default function AdminDashboard() {
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
       `}} />
       <div style={{ width: sidebarOpen ? 280 : 80, background: "#0f172a", color: "#94a3b8", display: "flex", flexDirection: "column", transition: "width 0.3s", flexShrink: 0, position: "sticky", top: 0, height: "100vh", overflow: "hidden", boxShadow: "4px 0 24px rgba(0,0,0,0.1)" }}>
-        <div style={{ padding: "24px 20px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ padding: "24px 20px", display: "flex", alignItems: "center", gap: 16, borderBottom: "1px solid rgba(255,255,255,0.05)", direction: "ltr" }}>
           <div style={{ fontSize: 28, flexShrink: 0 }}>🇹🇷</div>
           {sidebarOpen && <div style={{ color: "white", fontWeight: 800, fontSize: 18, whiteSpace:"nowrap" }}><span style={{ color: "#E03C31" }}>Go</span>Turkey <span style={{ fontWeight: 400 }}>Admin</span></div>}
         </div>
 
-        {/* User Panel */}
         {sidebarOpen && (
-          <div style={{ padding: "20px", display: "flex", alignItems: "center", gap: 14, borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.15)" }}>
+          <div style={{ padding: "20px", display: "flex", alignItems: "center", gap: 14, borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.15)", direction: lang === "AR" ? "rtl" : "ltr" }}>
             <div style={{ width: 46, height: 46, borderRadius: "50%", background: "linear-gradient(135deg, #E03C31 0%, #b91c1c 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "white", flexShrink: 0, border: "2px solid rgba(255,255,255,0.1)", boxShadow: "0 4px 10px rgba(0,0,0,0.3)" }}>
               👤
             </div>
             <div style={{ overflow: "hidden" }}>
               <div style={{ color: "white", fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{user.name}</div>
               <div style={{ color: "#10b981", fontSize: 12, fontWeight: 700, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ animation: "pulse 2s infinite" }}>●</span> Online
+                <span style={{ animation: "pulse 2s infinite" }}>●</span> {t.top.online}
               </div>
             </div>
           </div>
         )}
-        <ul style={{ listStyle: "none", padding: "10px 12px", margin: 0, flex: 1, overflowY: "auto", fontSize: 14 }}>
-          {sidebarOpen && <li style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "1px" }}>Main Menu</li>}
+
+        <ul style={{ listStyle: "none", padding: "10px 12px", margin: 0, flex: 1, overflowY: "auto", fontSize: 14, direction: lang === "AR" ? "rtl" : "ltr" }}>
+          {sidebarOpen && <li style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "1px" }}>{t.sidebar.mainMenu}</li>}
           {SIDEBAR_MENUS.map((menu) => {
             const isActive = activeTab === menu.id;
             return (
               <li key={menu.id} style={{ marginBottom: 4 }}>
                 <button 
                   onClick={() => setActiveTab(menu.id)}
-                  style={{ width: "100%", display: "flex", alignItems: "center", padding: "12px 14px", border: "none", outline: "none", cursor: "pointer", color: isActive ? "white" : "inherit", background: isActive ? "linear-gradient(90deg, #E03C31 0%, #b91c1c 100%)" : "transparent", borderRadius: 12, whiteSpace: "nowrap", transition: "all 0.2s", textAlign: "left" }}
+                  style={{ width: "100%", display: "flex", alignItems: "center", padding: "12px 14px", border: "none", outline: "none", cursor: "pointer", color: isActive ? "white" : "inherit", background: isActive ? "linear-gradient(90deg, #E03C31 0%, #b91c1c 100%)" : "transparent", borderRadius: 12, whiteSpace: "nowrap", transition: "all 0.2s", textAlign: lang === "AR" ? "right" : "left" }}
                   onMouseEnter={e => { if(!isActive) { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "white"; } }}
                   onMouseLeave={e => { if(!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "inherit"; } }}
                 >
-                  <span style={{ width: 24, fontSize: 18, textAlign: "center", marginRight: sidebarOpen ? 12 : 0 }}>{menu.icon}</span>
+                  <span style={{ width: 24, fontSize: 18, textAlign: "center", marginRight: lang === "AR" ? 0 : (sidebarOpen ? 12 : 0), marginLeft: lang === "AR" ? (sidebarOpen ? 12 : 0) : 0 }}>{menu.icon}</span>
                   {sidebarOpen && <span style={{ fontWeight: isActive ? 600 : 500 }}>{menu.label}</span>}
                 </button>
               </li>
@@ -476,11 +476,11 @@ export default function AdminDashboard() {
         </ul>
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <header style={{ height: 72, background: "rgba(255, 255, 255, 0.8)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", position: "sticky", top: 0, zIndex: 100, borderBottom: "1px solid #e2e8f0" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", direction: lang === "AR" ? "rtl" : "ltr" }}>
+        <header style={{ height: 72, background: "rgba(255, 255, 255, 0.8)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", position: "sticky", top: 0, zIndex: 100, borderBottom: "1px solid #e2e8f0", direction: "ltr" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
             <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 16 }}>☰</button>
-            <h1 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: 0 }}>Go Turkey And Study Academy</h1>
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: 0 }}>{t.top.title}</h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
             <div style={{ position: "relative", display: "flex", alignItems: "center", background: "white", borderRadius: 10, padding: "4px 8px", border: "1px solid #e2e8f0" }}>
@@ -488,15 +488,7 @@ export default function AdminDashboard() {
               <select 
                 value={lang} 
                 onChange={(e) => setLang(e.target.value)}
-                style={{
-                  background: "transparent",
-                  color: "#0f172a",
-                  border: "none",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  outline: "none"
-                }}
+                style={{ background: "transparent", color: "#0f172a", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", outline: "none" }}
               >
                 <option value="EN">English</option>
                 <option value="TR">Türkçe</option>
@@ -509,28 +501,15 @@ export default function AdminDashboard() {
                 👤
               </div>
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Welcome,</span>
-                <span style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginTop: -2 }}>Super Admin</span>
+                <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.top.welcome}</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", marginTop: -2 }}>{t.top.superAdmin}</span>
               </div>
             </div>
             
             <button 
               onClick={handleLogout} 
               title="Logout"
-              style={{ 
-                background: "rgba(224, 60, 49, 0.1)", 
-                color: "#E03C31", 
-                border: "1px solid rgba(224, 60, 49, 0.2)", 
-                padding: "10px 20px", 
-                borderRadius: 12, 
-                fontSize: 14, 
-                fontWeight: 800, 
-                cursor: "pointer", 
-                display: "flex", 
-                alignItems: "center", 
-                gap: 10,
-                transition: "all 0.2s"
-              }}
+              style={{ background: "rgba(224, 60, 49, 0.1)", color: "#E03C31", border: "1px solid rgba(224, 60, 49, 0.2)", padding: "10px 20px", borderRadius: 12, fontSize: 14, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, transition: "all 0.2s" }}
               onMouseEnter={e => { e.currentTarget.style.background = "#E03C31"; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "scale(1.05)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "rgba(224, 60, 49, 0.1)"; e.currentTarget.style.color = "#E03C31"; e.currentTarget.style.transform = "scale(1)"; }}
             >
@@ -539,7 +518,7 @@ export default function AdminDashboard() {
                 <polyline points="16 17 21 12 16 7"></polyline>
                 <line x1="21" y1="12" x2="9" y2="12"></line>
               </svg>
-              LOGOUT
+              {t.top.logout}
             </button>
           </div>
         </header>
@@ -559,7 +538,7 @@ export default function AdminDashboard() {
           {activeTab === "download" && renderDownload()}
           {activeTab === "certificate" && renderCertificate()}
           {activeTab === "cms" && renderCMS()}
-          {["alumni", "reports", "settings"].includes(activeTab) && renderFallback(activeTab.toUpperCase())}
+          {["alumni", "reports", "settings"].includes(activeTab) && renderFallback(t.sidebar[activeTab])}
         </div>
       </div>
     </div>
