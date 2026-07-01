@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/app/context/LanguageContext";
 
 const SIDEBAR_MENUS = [
   { id: "dashboard", icon: "📊", label: "Dashboard Home" },
@@ -77,6 +78,7 @@ export default function AdminDashboard() {
   // Local States
   const [studentView, setStudentView] = useState("list");
   const [search, setSearch] = useState("");
+  const { lang, setLang } = useLanguage();
 
   useEffect(() => {
     const stored = localStorage.getItem("goturkey_user");
@@ -481,6 +483,27 @@ export default function AdminDashboard() {
             <h1 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: 0 }}>Go Turkey And Study Academy</h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", background: "white", borderRadius: 10, padding: "4px 8px", border: "1px solid #e2e8f0" }}>
+              <span style={{ fontSize: 16, marginRight: 6 }}>🌍</span>
+              <select 
+                value={lang} 
+                onChange={(e) => setLang(e.target.value)}
+                style={{
+                  background: "transparent",
+                  color: "#0f172a",
+                  border: "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  outline: "none"
+                }}
+              >
+                <option value="EN">English</option>
+                <option value="TR">Türkçe</option>
+                <option value="AR">العربية</option>
+              </select>
+            </div>
+
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
                 👤
