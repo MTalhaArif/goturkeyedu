@@ -1,11 +1,18 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { upsertUser } from "@/lib/firestore";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "", country: "", nationality: "", educationLevel: "", targetProgram: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({
+    firstName: "", lastName: "", email: "", phone: "",
+    country: "", nationality: "", educationLevel: "",
+    targetProgram: "", password: "", confirmPassword: ""
+  });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -15,15 +22,56 @@ export default function RegisterPage() {
     e.preventDefault();
     if (form.password !== form.confirmPassword) { setError("Passwords do not match."); return; }
     if (form.password.length < 8) { setError("Password must be at least 8 characters."); return; }
-    setLoading(true); setError("");
-    await new Promise(r => setTimeout(r, 1000));
-    const users = JSON.parse(localStorage.getItem("goturkey_users") || "[]");
-    if (users.find(u => u.email === form.email)) { setError("This email is already registered."); setLoading(false); return; }
-    const newUser = { ...form, role: "student", name: `${form.firstName} ${form.lastName}`, createdAt: new Date().toISOString() };
-    users.push(newUser);
-    localStorage.setItem("goturkey_users", JSON.stringify(users));
-    localStorage.setItem("goturkey_user", JSON.stringify(newUser));
-    router.push("/");
+    setLoading(true);
+    setError("");
+
+    try {
+      // 1. Create Firebase Auth account
+      const credential = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      const user = credential.user;
+      const fullName = `${form.firstName} ${form.lastName}`.trim();
+
+      // 2. Set display name in Firebase Auth
+      await updateProfile(user, { displayName: fullName });
+
+      // 3. Save full student profile to Firestore `users` collection
+      await upsertUser(user.uid, {
+        name: fullName,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone,
+        country: form.country,
+        nationality: form.nationality,
+        educationLevel: form.educationLevel,
+        targetProgram: form.targetProgram,
+        role: "student",
+        status: "active",
+        registeredAt: new Date().toISOString(),
+      });
+
+      // 4. Store session in localStorage
+      localStorage.setItem("goturkey_user", JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        name: fullName,
+        role: "student",
+        country: form.country,
+        educationLevel: form.educationLevel,
+      }));
+
+      router.push("/");
+    } catch (err) {
+      const messages = {
+        "auth/email-already-in-use": "This email is already registered. Please sign in instead.",
+        "auth/invalid-email": "Invalid email address.",
+        "auth/weak-password": "Password must be at least 6 characters.",
+        "auth/network-request-failed": "Network error. Check your connection.",
+        "auth/too-many-requests": "Too many attempts. Please try again later.",
+      };
+      setError(messages[err.code] || `Registration failed: ${err.message}`);
+      setLoading(false);
+    }
   };
 
   const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
@@ -35,9 +83,10 @@ export default function RegisterPage() {
           <a href="/" style={{ display: "inline-flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
             <span style={{ fontSize: 36 }}>🇹🇷</span>
             <div style={{ fontSize: 28, fontWeight: 900, color: "white", fontFamily: "var(--font-heading)" }}>
-              <span style={{ color: "#E03C31" }}>Go</span>Turkey
+              <span style={{ color: "#ffb300" }}>Go</span>Turkey
             </div>
           </a>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 4 }}>Student Portal Registration</div>
         </div>
 
         <div style={{ background: "white", borderRadius: 20, padding: "40px 44px", boxShadow: "0 30px 80px rgba(0,0,0,0.3)" }}>
@@ -57,6 +106,14 @@ export default function RegisterPage() {
           <h2 style={{ color: "var(--secondary)", fontSize: 22, marginBottom: 24, textAlign: "center" }}>
             {step === 1 ? "Personal Information" : step === 2 ? "Education Details" : "Create Your Account"}
           </h2>
+
+          {/* Firebase badge */}
+          {step === 3 && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: "rgba(26,35,126,0.04)", borderRadius: 8, padding: "7px 12px", marginBottom: 20, border: "1px solid rgba(26,35,126,0.08)" }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a237e" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span style={{ fontSize: 12, color: "#64748b", fontWeight: 500 }}>Account secured with Firebase Authentication · Profile saved to Firestore</span>
+            </div>
+          )}
 
           {error && <div style={{ background: "rgba(224,60,49,0.08)", border: "1px solid rgba(224,60,49,0.3)", borderRadius: 8, padding: "12px 16px", marginBottom: 20, color: "var(--primary)", fontSize: 14 }}>⚠️ {error}</div>}
 
