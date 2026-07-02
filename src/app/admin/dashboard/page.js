@@ -61,6 +61,12 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState("");
   const { lang, setLang } = useLanguage();
 
+  // Certificate module state (must be at top level — Rules of Hooks)
+  const [certTab, setCertTab] = useState("templates");
+  const [certPreview, setCertPreview] = useState(null);
+  const [genCriteria, setGenCriteria] = useState({ cls: "", section: "", cert: "" });
+  const [genStudents, setGenStudents] = useState([]);
+
   useEffect(() => {
     const stored = localStorage.getItem("goturkey_user");
     if (!stored) { router.push("/admin/login"); return; }
@@ -352,10 +358,7 @@ export default function AdminDashboard() {
     </>
   );
 
-  const [certTab, setCertTab] = useState("templates");
-  const [certPreview, setCertPreview] = useState(null);
-  const [genCriteria, setGenCriteria] = useState({ cls: "", section: "", cert: "" });
-  const [genStudents, setGenStudents] = useState([]);
+  // (certTab, certPreview, genCriteria, genStudents are declared at top level above)
 
   const certTemplates = [
     { id: 1, name: "GoTurkey", bg: "Standard Blue", status: "Active" },
