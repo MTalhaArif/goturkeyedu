@@ -1,9 +1,6 @@
+"use client";
 import Link from "next/link";
-
-export const metadata = {
-  title: "Sitemap | GoTurkey - Study in Türkiye",
-  description: "Complete sitemap for the GoTurkey education portal — find all pages about studying in Türkiye.",
-};
+import { useState } from "react";
 
 const sitemap = [
   {
@@ -71,6 +68,33 @@ const sitemap = [
   },
 ];
 
+function SitemapLink({ href, label }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <li>
+      <Link
+        href={href}
+        style={{
+          color: hovered ? "#E03C31" : "#64748b",
+          fontSize: 14,
+          fontWeight: 500,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: hovered ? "6px 14px" : "6px 10px",
+          borderRadius: 7,
+          background: hovered ? "rgba(224,60,49,0.06)" : "transparent",
+          transition: "all 0.2s",
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <span style={{ color: "#E03C31", fontSize: 12 }}>›</span> {label}
+      </Link>
+    </li>
+  );
+}
+
 export default function SitemapPage() {
   return (
     <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh", paddingTop: 60, paddingBottom: 80 }}>
@@ -109,26 +133,9 @@ export default function SitemapPage() {
               }}>
                 <span>{section.icon}</span> {section.category}
               </h2>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
                 {section.links.map((link) => (
-                  <li key={link.href}>
-                    <Link href={link.href} style={{
-                      color: "#64748b",
-                      fontSize: 14,
-                      fontWeight: 500,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "6px 10px",
-                      borderRadius: 7,
-                      transition: "all 0.2s",
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(224,60,49,0.06)"; e.currentTarget.style.color = "#E03C31"; e.currentTarget.style.paddingLeft = "14px"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; e.currentTarget.style.paddingLeft = "10px"; }}
-                    >
-                      <span style={{ color: "#E03C31", fontSize: 12 }}>›</span> {link.label}
-                    </Link>
-                  </li>
+                  <SitemapLink key={link.href} href={link.href} label={link.label} />
                 ))}
               </ul>
             </div>
