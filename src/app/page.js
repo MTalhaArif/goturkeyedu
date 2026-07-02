@@ -137,19 +137,22 @@ export default function Home() {
 
       {/* HERO SECTION */}
       <section id="hero" className="hero">
-        {heroSlides.map((slide, i) => (
-          <div
-            key={i}
-            className={`hero-slide ${i === activeSlide ? "active" : ""}`}
-            style={{ background: slide.bg, backgroundSize: "cover", backgroundPosition: "center" }}
-          >
-            <div className="hero-content">
-              <h1>{t[slide.titleKey]}</h1>
-              <p>{t[slide.subKey]}</p>
-              <a href="#item-1" className="btn-primary" style={{ marginBottom: 20 }}>{t.exploreMore}</a>
+        {/* Slides wrapper — overflow:hidden only clips the slide images */}
+        <div className="hero-slides-wrap">
+          {heroSlides.map((slide, i) => (
+            <div
+              key={i}
+              className={`hero-slide ${i === activeSlide ? "active" : ""}`}
+              style={{ background: slide.bg, backgroundSize: "cover", backgroundPosition: "center" }}
+            >
+              <div className="hero-content">
+                <h1>{t[slide.titleKey]}</h1>
+                <p>{t[slide.subKey]}</p>
+                <a href="#item-1" className="btn-primary" style={{ marginBottom: 20 }}>{t.exploreMore}</a>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
 
         {/* Slide Dots */}
         <div className="hero-dots">
@@ -158,7 +161,7 @@ export default function Home() {
           ))}
         </div>
 
-        {/* FLOATING STUDY FINDER */}
+        {/* FLOATING STUDY FINDER — outside the overflow:hidden wrapper */}
         <div className="study-finder">
           <h3>🔍 {t.studyFinder}</h3>
           <form className="study-finder-form" onSubmit={handleStudySearch}>

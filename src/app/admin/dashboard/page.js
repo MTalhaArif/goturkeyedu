@@ -352,20 +352,273 @@ export default function AdminDashboard() {
     </>
   );
 
+  const [certTab, setCertTab] = useState("templates");
+  const [certPreview, setCertPreview] = useState(null);
+  const [genCriteria, setGenCriteria] = useState({ cls: "", section: "", cert: "" });
+  const [genStudents, setGenStudents] = useState([]);
+
+  const certTemplates = [
+    { id: 1, name: "GoTurkey", bg: "Standard Blue", status: "Active" },
+    { id: 2, name: "GO TURKEY INGILIZCE", bg: "English Template", status: "Active" },
+    { id: 3, name: "Sample Transfer Certificate", bg: "Transfer Layout", status: "Active" },
+  ];
+  const mockStudentsForGen = [
+    { id: "1001", name: "Ahmet Yılmaz", admNo: "GTK-2026-001", class: "Turkish A1", section: "Morning" },
+    { id: "1002", name: "Aisha Khan", admNo: "GTK-2026-002", class: "Turkish A1", section: "Morning" },
+    { id: "1003", name: "Wajid Ullah", admNo: "GTK-2026-003", class: "Turkish B1", section: "Evening" },
+  ];
+
+  const handleGenSearch = () => {
+    setGenStudents(mockStudentsForGen.filter(s =>
+      (!genCriteria.cls || s.class.includes(genCriteria.cls)) &&
+      (!genCriteria.section || s.section === genCriteria.section)
+    ));
+  };
+
+  const CertPreviewModal = ({ student, onClose }) => {
+    const qrValue = `https://goturkey.gen.tr/verify/${student.admNo}`;
+    return (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
+        <div style={{ background: "white", borderRadius: 16, padding: 32, maxWidth: 680, width: "90%", position: "relative" }} onClick={e => e.stopPropagation()}>
+          <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "#ef4444", color: "white", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontSize: 18, fontWeight: 700 }}>×</button>
+          {/* Certificate preview */}
+          <div style={{ background: "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)", borderRadius: 12, padding: "40px 48px", color: "white", textAlign: "center", position: "relative", overflow: "hidden", marginBottom: 20 }}>
+            <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 12px)", pointerEvents: "none" }} />
+            <div style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 20 }}>
+              <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🇹🇷</div>
+              <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎓</div>
+            </div>
+            <div style={{ fontSize: 11, letterSpacing: 4, opacity: 0.7, marginBottom: 6 }}>GO TURKEY AND STUDY ACADEMY</div>
+            <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 2, marginBottom: 4 }}>CERTIFICATE</div>
+            <div style={{ fontSize: 16, opacity: 0.8, marginBottom: 24 }}>OF APPRECIATION</div>
+            <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 8, padding: "16px 24px", marginBottom: 20 }}>
+              <div style={{ fontSize: 13, opacity: 0.7, marginBottom: 4 }}>This certificate is proudly presented to</div>
+              <div style={{ fontSize: 22, fontWeight: 800 }}>{student.name}</div>
+              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>Admission No: {student.admNo}</div>
+            </div>
+            <div style={{ fontSize: 13, opacity: 0.8, lineHeight: 1.7, marginBottom: 24 }}>
+              Has successfully completed the <strong>{student.class}</strong> (Turkish Language Course) Programme<br />
+              This Certificate grade equals to Common European Framework of Reference Language Level
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ width: 120, borderTop: "1px solid rgba(255,255,255,0.4)", paddingTop: 6, fontSize: 12, opacity: 0.7 }}>DATE</div>
+              </div>
+              {/* QR Code placeholder */}
+              <div style={{ background: "white", borderRadius: 8, padding: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 72, height: 72, background: "#0f172a", borderRadius: 4, display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, padding: 4 }}>
+                  {Array.from({length: 49}).map((_, i) => (
+                    <div key={i} style={{ background: [0,1,2,3,4,5,7,14,21,28,35,42,8,15,22,29,36,43,6,13,20,27,34,41,48,10,11,12,36,37,38,23,25].includes(i) ? "#0f172a" : "white", borderRadius: 1 }} />
+                  ))}
+                </div>
+                <div style={{ color: "#0f172a", fontSize: 9, fontWeight: 700 }}>VERIFY</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ width: 120, borderTop: "1px solid rgba(255,255,255,0.4)", paddingTop: 6, fontSize: 12, opacity: 0.7 }}>SIGNATURE</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            <div style={{ fontSize: 12, color: "#64748b", background: "#f8fafc", padding: "6px 14px", borderRadius: 6 }}>🔗 Verify: goturkey.gen.tr/verify/{student.admNo}</div>
+            <button style={{ background: "#E03C31", color: "white", border: "none", padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>🖨️ Print</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderCertificate = () => (
     <>
-      <HeaderControls title={t.certificate.title} btnText={t.certificate.addBtn} />
-      <DataTable 
-        columns={t.certificate.cols} 
-        data={MOCK_DATA.certificates}
-        renderRow={r => (
-          <>
-            <td style={{ padding: "12px 8px", fontWeight: 600 }}>{r.name}</td><td>{r.bg}</td>
-            <td><span style={{ padding: "4px 8px", borderRadius: 4, fontSize: 12, fontWeight: 700, background: "rgba(16,185,129,0.1)", color: "#10b981" }}>{r.status}</span></td>
-            <td><button style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", padding: "4px 8px", borderRadius: 4, cursor: "pointer" }}>{t.certificate.preview}</button></td>
-          </>
-        )}
-      />
+      {certPreview && <CertPreviewModal student={certPreview} onClose={() => setCertPreview(null)} />}
+      <HeaderControls title="Certificate Management" />
+      {/* Sub-tabs */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 24, background: "white", borderRadius: 12, padding: 4, boxShadow: "0 2px 10px rgba(0,0,0,0.05)", width: "fit-content" }}>
+        {[
+          { id: "templates", label: "📋 Student Certificate" },
+          { id: "generate", label: "🖨️ Generate Certificate" },
+          { id: "idcard", label: "🪪 Student ID Card" },
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setCertTab(tab.id)} style={{ padding: "10px 20px", border: "none", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontSize: 13, background: certTab === tab.id ? "#E03C31" : "transparent", color: certTab === tab.id ? "white" : "#64748b", transition: "all 0.2s" }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* TEMPLATES TAB */}
+      {certTab === "templates" && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 24 }}>
+          {/* Add form */}
+          <div style={{ background: "white", borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: "#0f172a" }}>Add Student Certificate</h3>
+            {[
+              { label: "Certificate Name *", placeholder: "e.g. GoTurkey" },
+              { label: "Header Left Text", placeholder: "" },
+              { label: "Header Center Text", placeholder: "" },
+              { label: "Header Right Text", placeholder: "" },
+            ].map((f, i) => (
+              <div key={i} style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>{f.label}</label>
+                <input placeholder={f.placeholder} style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 7, outline: "none", fontSize: 13 }} />
+              </div>
+            ))}
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Body Text *</label>
+              <textarea rows={4} style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 7, outline: "none", fontSize: 13, resize: "vertical" }} />
+              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4, lineHeight: 1.6 }}>
+                Tags: [name] [dob] [admission_no] [roll_no] [class] [section] [gender] [father_name] [category] [email] [phone]
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Footer Left Text</label>
+                <input style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 7, outline: "none", fontSize: 13 }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>Footer Right Text</label>
+                <input style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 7, outline: "none", fontSize: 13 }} />
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+              {["Header Height", "Footer Height", "Body Height", "Body Width"].map((l, i) => (
+                <div key={i}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>{l}</label>
+                  <input type="number" style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 7, outline: "none", fontSize: 13 }} />
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b" }}>Student Photo</label>
+              <div style={{ width: 40, height: 22, background: "#e2e8f0", borderRadius: 11, position: "relative", cursor: "pointer" }}>
+                <div style={{ width: 18, height: 18, background: "white", borderRadius: "50%", position: "absolute", top: 2, left: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+              </div>
+            </div>
+            <div style={{ border: "2px dashed #e2e8f0", borderRadius: 8, padding: "20px", textAlign: "center", marginBottom: 16, color: "#94a3b8", fontSize: 13 }}>
+              📁 Drag and drop background image or click
+            </div>
+            <button style={{ width: "100%", background: "#E03C31", color: "white", border: "none", padding: "11px", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>Save Certificate Template</button>
+          </div>
+          {/* List */}
+          <div style={{ background: "white", borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: "#0f172a" }}>Student Certificate List</h3>
+            <input placeholder="Search..." style={{ width: "100%", padding: "9px 12px", border: "1px solid #e2e8f0", borderRadius: 7, outline: "none", fontSize: 13, marginBottom: 16 }} />
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: "2px solid #e2e8f0", color: "#64748b" }}>
+                <th style={{ padding: "10px 8px", textAlign: "left" }}>Certificate Name</th>
+                <th style={{ padding: "10px 8px", textAlign: "left" }}>Background</th>
+                <th style={{ padding: "10px 8px", textAlign: "left" }}>Action</th>
+              </tr></thead>
+              <tbody>
+                {certTemplates.map(c => (
+                  <tr key={c.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "12px 8px", fontWeight: 600, color: "#3b82f6", cursor: "pointer" }}>{c.name}</td>
+                    <td style={{ padding: "12px 8px" }}><div style={{ width: 44, height: 32, background: "linear-gradient(135deg,#1a237e,#0d47a1)", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🖼️</div></td>
+                    <td style={{ padding: "12px 8px" }}>
+                      <button onClick={() => setCertPreview({ name: c.name, admNo: "GTK-PREVIEW", class: "Turkish A1" })} style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", padding: "4px 10px", borderRadius: 4, cursor: "pointer", marginRight: 6, fontSize: 13 }}>👁️ View</button>
+                      <button style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "none", padding: "4px 10px", borderRadius: 4, cursor: "pointer", marginRight: 6, fontSize: 13 }}>✏️</button>
+                      <button style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "none", padding: "4px 10px", borderRadius: 4, cursor: "pointer", fontSize: 13 }}>×</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* GENERATE TAB */}
+      {certTab === "generate" && (
+        <div>
+          <div style={{ background: "white", borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9", marginBottom: 24 }}>
+            <h4 style={{ fontSize: 14, fontWeight: 600, color: "#1e293b", marginBottom: 16 }}>Select Criteria</h4>
+            <div style={{ display: "flex", gap: 16 }}>
+              <select value={genCriteria.cls} onChange={e => setGenCriteria(p => ({...p, cls: e.target.value}))} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none", fontSize: 13 }}>
+                <option value="">Class *</option>
+                <option>Turkish A1</option><option>Turkish B1</option><option>Turkish B2</option>
+              </select>
+              <select value={genCriteria.section} onChange={e => setGenCriteria(p => ({...p, section: e.target.value}))} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none", fontSize: 13 }}>
+                <option value="">Section</option>
+                <option>Morning</option><option>Evening</option>
+              </select>
+              <select value={genCriteria.cert} onChange={e => setGenCriteria(p => ({...p, cert: e.target.value}))} style={{ flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #e2e8f0", outline: "none", fontSize: 13 }}>
+                <option value="">Certificate *</option>
+                {certTemplates.map(c => <option key={c.id}>{c.name}</option>)}
+              </select>
+              <button onClick={handleGenSearch} style={{ background: "#0f172a", color: "white", border: "none", padding: "0 28px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>🔍 Search</button>
+            </div>
+          </div>
+          {genStudents.length > 0 && (
+            <div style={{ background: "white", borderRadius: 16, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <h4 style={{ fontSize: 15, fontWeight: 700 }}>Student List ({genStudents.length})</h4>
+                <button style={{ background: "#E03C31", color: "white", border: "none", padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>🖨️ Generate All</button>
+              </div>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead><tr style={{ borderBottom: "2px solid #e2e8f0", color: "#64748b" }}>
+                  <th style={{ padding: "10px 8px", textAlign: "left" }}>Adm No</th>
+                  <th style={{ padding: "10px 8px", textAlign: "left" }}>Student Name</th>
+                  <th style={{ padding: "10px 8px", textAlign: "left" }}>Class</th>
+                  <th style={{ padding: "10px 8px", textAlign: "left" }}>Section</th>
+                  <th style={{ padding: "10px 8px", textAlign: "left" }}>QR / Action</th>
+                </tr></thead>
+                <tbody>
+                  {genStudents.map(s => (
+                    <tr key={s.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "12px 8px", fontWeight: 600 }}>{s.admNo}</td>
+                      <td style={{ padding: "12px 8px", fontWeight: 600 }}>{s.name}</td>
+                      <td style={{ padding: "12px 8px" }}>{s.class}</td>
+                      <td style={{ padding: "12px 8px" }}>{s.section}</td>
+                      <td style={{ padding: "12px 8px", display: "flex", gap: 8 }}>
+                        <button onClick={() => setCertPreview(s)} style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "none", padding: "5px 12px", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 12 }}>📄 Preview + QR</button>
+                        <button style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "none", padding: "5px 12px", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 12 }}>🖨️ Print</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {genStudents.length === 0 && (
+            <div style={{ textAlign: "center", padding: "60px 0", color: "#94a3b8" }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🖨️</div>
+              <p style={{ fontSize: 15 }}>Select class and certificate template, then click Search</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ID CARD TAB */}
+      {certTab === "idcard" && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
+          {mockStudentsForGen.map(s => (
+            <div key={s.id} style={{ background: "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)", borderRadius: 16, padding: 20, color: "white", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                <div style={{ fontSize: 11, letterSpacing: 1.5, opacity: 0.7 }}>STUDENT ID</div>
+                <div style={{ fontSize: 20 }}>🇹🇷</div>
+              </div>
+              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, border: "2px solid rgba(255,255,255,0.3)" }}>
+                  {s.name.charAt(0)}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>{s.name}</div>
+                  <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>{s.class} · {s.section}</div>
+                  <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>{s.admNo}</div>
+                </div>
+              </div>
+              {/* Mini QR */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 16 }}>
+                <div style={{ fontSize: 10, opacity: 0.6 }}>Go Turkey & Study Academy<br />2026 – 2027</div>
+                <div style={{ background: "white", borderRadius: 4, padding: 4, width: 40, height: 40, display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 1 }}>
+                  {Array.from({length:25}).map((_,i) => (
+                    <div key={i} style={{ background: [0,1,2,3,4,5,9,10,14,15,19,20,21,22,23,24].includes(i) ? "#0f172a" : "white", borderRadius: 0.5 }} />
+                  ))}
+                </div>
+              </div>
+              <button style={{ width: "100%", marginTop: 14, background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.25)", padding: "7px", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 12 }}>🖨️ Print ID Card</button>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 
