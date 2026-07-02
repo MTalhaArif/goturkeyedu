@@ -137,7 +137,7 @@ export default function Home() {
 
       {/* HERO SECTION */}
       <section id="hero" className="hero">
-        {/* Slides wrapper — overflow:hidden only clips the slide images */}
+        {/* Slides wrapper */}
         <div className="hero-slides-wrap">
           {heroSlides.map((slide, i) => (
             <div
@@ -152,16 +152,15 @@ export default function Home() {
               </div>
             </div>
           ))}
+          {/* Slide Dots — inside slides wrap so they sit over the image */}
+          <div className="hero-dots">
+            {heroSlides.map((_, i) => (
+              <button key={i} className={`hero-dot ${i === activeSlide ? "active" : ""}`} onClick={() => { setActiveSlide(i); clearInterval(timerRef.current); }} />
+            ))}
+          </div>
         </div>
 
-        {/* Slide Dots */}
-        <div className="hero-dots">
-          {heroSlides.map((_, i) => (
-            <button key={i} className={`hero-dot ${i === activeSlide ? "active" : ""}`} onClick={() => { setActiveSlide(i); clearInterval(timerRef.current); }} />
-          ))}
-        </div>
-
-        {/* FLOATING STUDY FINDER — outside the overflow:hidden wrapper */}
+        {/* STUDY FINDER — below hero slides, full-width bar, zero overlap */}
         <div className="study-finder">
           <h3>🔍 {t.studyFinder}</h3>
           <form className="study-finder-form" onSubmit={handleStudySearch}>
