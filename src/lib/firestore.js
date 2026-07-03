@@ -29,7 +29,18 @@ export const COLLECTIONS = {
   SCHOLARSHIPS:  'scholarships',
   DOCUMENTS:     'documents',
   NOTIFICATIONS: 'notifications',
+  STUDENTS:      'students',
 };
+
+// ─── PORTAL ACCOUNT HIERARCHY (users collection field contract) ──────────────
+// users/{uid} additionally carries, for role: 'super_admin' | 'agency' | 'sub_agency':
+//   status:         'active' | 'disabled'
+//   parentAgencyId: string | null   // sub_agency -> its owning agency's uid
+//   createdBy:      string | null   // uid of whoever created this account
+//
+// students/{id} (CRM records an agency/sub-agency manages, not login accounts):
+//   agencyId: string  // top-level owning agency uid (rollup key)
+//   ownerId:  string  // exact tenant that added it: agency uid, or sub-agency uid
 
 // ─── GENERIC HELPERS ──────────────────────────────────────────────────────────
 
@@ -170,4 +181,71 @@ export async function getScholarshipsByType(type) {
   const q = query(ref, where('type', '==', type), limit(20));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// ─── AGENCIES / SUB-AGENCIES (portal accounts, stored in USERS) ───────────────
+// Account creation/disable-enable goes through the /api/agencies and
+// /api/subagencies Route Handlers (Firebase Admin SDK) — these are read-only
+// list helpers for the dashboard UI.
+
+/** Get all Agency accounts (Super Admin view) */
+export async function getAgencies() {
+  const ref = collection(db, COLLECTIONS.USERS);
+  const q = query(ref, where('role', '==', 'agency'));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** Get the Sub-Agency accounts belonging to one Agency */
+export async function getSubAgenciesByParent(parentAgencyId) {
+  const ref = collection(db, COLLECTIONS.USERS);
+  const q = query(ref, where('role', '==', 'sub_agency'), where('parentAgencyId', '==', parentAgencyId));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** Get every Sub-Agency account across all agencies (Super Admin view) */
+export async function getAllSubAgencies() {
+  const ref = collection(db, COLLECTIONS.USERS);
+  const q = query(ref, where('role', '==', 'sub_agency'));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// ─── STUDENTS (agency/sub-agency managed CRM records) ─────────────────────────
+
+/** Add a student record. Caller must set agencyId (top-level rollup) and ownerId (exact tenant). */
+export async function addStudent(data) {
+  return addDocument(COLLECTIONS.STUDENTS, data);
+}
+
+/** Update a student record */
+export async function updateStudent(id, data) {
+  return updateDocument(COLLECTIONS.STUDENTS, id, data);
+}
+
+/** Delete a student record (this is CRM data, not a tenant account — normal delete is fine) */
+export async function deleteStudent(id) {
+  return deleteDocument(COLLECTIONS.STUDENTS, id);
+}
+
+/** Get every student under an Agency (its own + everything its Sub-Agencies added) */
+export async function getStudentsByAgency(agencyId) {
+  const ref = collection(db, COLLECTIONS.STUDENTS);
+  const q = query(ref, where('agencyId', '==', agencyId));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** Get only the students a specific tenant (Agency or Sub-Agency) added itself */
+export async function getStudentsByOwner(ownerId) {
+  const ref = collection(db, COLLECTIONS.STUDENTS);
+  const q = query(ref, where('ownerId', '==', ownerId));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/** Get every student platform-wide (Super Admin view) */
+export async function getAllStudents() {
+  return getCollection(COLLECTIONS.STUDENTS);
 }

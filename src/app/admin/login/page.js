@@ -3,9 +3,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { getUserProfile, upsertUser } from "@/lib/firestore";
 
-// Admin UID — only this Firebase UID is granted admin access
-const ADMIN_EMAIL = "goturkeytr@gmail.com";
+// Shared portal login for Super Admin, Agency, and Sub-Agency accounts.
+// Role and access are determined by the Firestore `users` profile, not a
+// hardcoded email — the profile is the single source of truth for who's who.
+//
+// The original Super Admin account predates this profile-based system and has
+// no Firestore `users` doc yet. This bootstraps it exactly once, on first login
+// after this change — every account created from here on gets its profile at
+// creation time via the /api/agencies and /api/subagencies routes instead.
+const BOOTSTRAP_SUPER_ADMIN_EMAIL = "goturkeytr@gmail.com";
+
+const DASHBOARD_PATH_BY_ROLE = {
+  super_admin: "/admin/dashboard",
+  agency: "/agency/dashboard",
+  sub_agency: "/subagency/dashboard",
+};
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -23,23 +37,37 @@ export default function AdminLogin() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Only allow the designated admin email
-      if (user.email !== ADMIN_EMAIL) {
+      let profile = await getUserProfile(user.uid);
+      if (!profile && user.email === BOOTSTRAP_SUPER_ADMIN_EMAIL) {
+        await upsertUser(user.uid, { name: "Super Admin", email: user.email, role: "super_admin", status: "active" });
+        profile = await getUserProfile(user.uid);
+      }
+      const dashboardPath = profile && DASHBOARD_PATH_BY_ROLE[profile.role];
+
+      if (!dashboardPath) {
         await auth.signOut();
-        setError("Access denied. This portal is for administrators only.");
+        setError("Access denied. This portal is for administrators, agencies, and sub-agencies only.");
         setLoading(false);
         return;
       }
 
-      // Store admin session in localStorage (non-sensitive metadata only)
+      if (profile.status === "disabled") {
+        await auth.signOut();
+        setError("Your account has been disabled. Contact your administrator.");
+        setLoading(false);
+        return;
+      }
+
+      // Store portal session in localStorage (non-sensitive metadata only)
       localStorage.setItem("goturkey_user", JSON.stringify({
         uid: user.uid,
         email: user.email,
-        role: "admin",
-        name: "Super Admin",
+        role: profile.role,
+        name: profile.name || "Super Admin",
+        parentAgencyId: profile.parentAgencyId || null,
       }));
 
-      router.push("/admin/dashboard");
+      router.push(dashboardPath);
     } catch (err) {
       const messages = {
         "auth/invalid-credential": "Invalid email or password. Please try again.",
