@@ -1,0 +1,92 @@
+rules_version = '2';
+
+// NOT auto-deployed. Written fresh for the Agency/Sub-Agency hierarchy feature —
+// review and reconcile against whatever rules are currently live in the Firebase
+// Console (project goturkey-74ff4) before pasting this in or running
+// `firebase deploy --only firestore:rules`.
+//
+// Account creation/disable for agencies & sub-agencies goes through the
+// Firebase Admin SDK (Next.js Route Handlers under src/app/api/**), which
+// bypasses these rules entirely — the `create`/status-field restrictions below
+// exist to stop the same actions being done directly from the browser.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && myProfile().role == 'super_admin';
+    }
+
+    function isParentAgencyOf(uid) {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(uid)).data.parentAgencyId == request.auth.uid;
+    }
+
+    // ── Portal accounts (students, super_admin, agency, sub_agency) ─────────
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isSuperAdmin() || isParentAgencyOf(uid));
+      // Accounts are created/deleted only via the Admin-SDK routes, which bypass rules.
+      allow create, delete: if false;
+      // Own profile may be edited for non-sensitive fields; role/status/hierarchy
+      // fields are locked to server-side (Admin SDK) writes only.
+      allow update: if isSignedIn() && request.auth.uid == uid &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status', 'parentAgencyId']);
+    }
+
+    // ── Student CRM records managed by an Agency/Sub-Agency ─────────────────
+    match /students/{studentId} {
+      allow read: if isSuperAdmin() ||
+        (isSignedIn() && resource.data.agencyId == request.auth.uid) ||
+        (isSignedIn() && resource.data.ownerId == request.auth.uid);
+
+      allow create: if isSignedIn() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        (
+          (myProfile().role == 'agency' && request.resource.data.agencyId == request.auth.uid) ||
+          (myProfile().role == 'sub_agency' && request.resource.data.agencyId == myProfile().parentAgencyId)
+        );
+
+      allow update, delete: if isSuperAdmin() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+    }
+
+    // ── Public marketing-site collections ────────────────────────────────────
+    match /universities/{id} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /scholarships/{id} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /contacts/{id} {
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    match /applications/{id} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    match /documents/{id} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    match /notifications/{id} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

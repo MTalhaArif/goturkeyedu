@@ -3,6 +3,8 @@ export const adminDict = {
     sidebar: {
       mainMenu: "Main Menu",
       dashboard: "Dashboard Home",
+      agencies: "Agencies",
+      subagencies: "Sub-Agencies",
       front_office: "Front Office",
       student_info: "Student Information",
       fees: "Fees Collection",
@@ -61,7 +63,13 @@ export const adminDict = {
       searchPlaceholder: "Search By Student Name...",
       listView: "List View",
       detailsView: "Details View",
-      cols: ["Admission No", "Student Name", "Class", "DOB", "Gender", "Mobile", "Paid", "Action"]
+      cols: ["Admission No", "Student Name", "Class", "Section", "Email", "Phone", "Action"],
+      addBtn: "+ Add Student",
+      name: "Full Name",
+      email: "Email Address",
+      phone: "Phone Number",
+      nationality: "Nationality",
+      confirmDelete: "Remove this student record?"
     },
     fees: {
       title: "Search Due Fees",
@@ -124,6 +132,49 @@ export const adminDict = {
       addBtn: "+ Add Event",
       cols: ["Event Title", "Venue", "Start Date", "End Date", "Action"]
     },
+    agencies: {
+      title: "Agencies",
+      addBtn: "+ Add Agency",
+      cols: ["Name", "Email", "Status", "Action"],
+      name: "Agency Name",
+      email: "Email Address",
+      password: "Password",
+      submit: "Create Agency",
+      passwordRevealTitle: "Agency Created",
+      passwordRevealWarning: "Save this password now — it cannot be shown again.",
+      copyBtn: "Copy Credentials",
+      close: "Done",
+      active: "Active",
+      disabled: "Disabled",
+      enable: "Enable",
+      disable: "Disable"
+    },
+    subagencies: {
+      title: "Sub-Agencies",
+      addBtn: "+ Add Sub-Agency",
+      cols: ["Name", "Email", "Status", "Action"],
+      name: "Sub-Agency Name",
+      email: "Email Address",
+      password: "Password",
+      submit: "Create Sub-Agency",
+      passwordRevealTitle: "Sub-Agency Created",
+      passwordRevealWarning: "Save this password now — it cannot be shown again.",
+      copyBtn: "Copy Credentials",
+      close: "Done"
+    },
+    reports: {
+      title: "Reports",
+      totalAgencies: "Total Agencies",
+      activeAgencies: "Active",
+      disabledAgencies: "Disabled",
+      totalSubAgencies: "Total Sub-Agencies",
+      mySubAgencies: "My Sub-Agencies",
+      myStudents: "My Students",
+      myStatus: "Account Status",
+      perAgencyBreakdown: "Students per Agency",
+      perSubAgencyBreakdown: "Students per Sub-Agency",
+      noData: "No data yet."
+    },
     fallback: {
       config: "configuration",
       msg: "This administrative module is active and awaiting backend parameters."
@@ -133,6 +184,8 @@ export const adminDict = {
     sidebar: {
       mainMenu: "Ana Menü",
       dashboard: "Gösterge Paneli",
+      agencies: "Acenteler",
+      subagencies: "Alt Acenteler",
       front_office: "Ön Büro",
       student_info: "Öğrenci Bilgileri",
       fees: "Ücret Tahsilatı",
@@ -191,7 +244,13 @@ export const adminDict = {
       searchPlaceholder: "Öğrenci Adı İle Ara...",
       listView: "Liste Görünümü",
       detailsView: "Detay Görünümü",
-      cols: ["Kabul No", "Öğrenci Adı", "Sınıf", "Doğum Tarihi", "Cinsiyet", "Mobil", "Ödendi", "Aksiyon"]
+      cols: ["Kabul No", "Öğrenci Adı", "Sınıf", "Bölüm", "E-posta", "Telefon", "Aksiyon"],
+      addBtn: "+ Öğrenci Ekle",
+      name: "Ad Soyad",
+      email: "E-posta Adresi",
+      phone: "Telefon Numarası",
+      nationality: "Uyruk",
+      confirmDelete: "Bu öğrenci kaydı silinsin mi?"
     },
     fees: {
       title: "Vadesi Gelen Ücretleri Ara",
@@ -254,6 +313,49 @@ export const adminDict = {
       addBtn: "+ Etkinlik Ekle",
       cols: ["Etkinlik Başlığı", "Yer", "Başlangıç Tarihi", "Bitiş Tarihi", "Aksiyon"]
     },
+    agencies: {
+      title: "Acenteler",
+      addBtn: "+ Acente Ekle",
+      cols: ["İsim", "E-posta", "Durum", "Aksiyon"],
+      name: "Acente Adı",
+      email: "E-posta Adresi",
+      password: "Şifre",
+      submit: "Acente Oluştur",
+      passwordRevealTitle: "Acente Oluşturuldu",
+      passwordRevealWarning: "Bu şifreyi şimdi kaydedin — tekrar gösterilmeyecektir.",
+      copyBtn: "Bilgileri Kopyala",
+      close: "Tamam",
+      active: "Aktif",
+      disabled: "Devre Dışı",
+      enable: "Etkinleştir",
+      disable: "Devre Dışı Bırak"
+    },
+    subagencies: {
+      title: "Alt Acenteler",
+      addBtn: "+ Alt Acente Ekle",
+      cols: ["İsim", "E-posta", "Durum", "Aksiyon"],
+      name: "Alt Acente Adı",
+      email: "E-posta Adresi",
+      password: "Şifre",
+      submit: "Alt Acente Oluştur",
+      passwordRevealTitle: "Alt Acente Oluşturuldu",
+      passwordRevealWarning: "Bu şifreyi şimdi kaydedin — tekrar gösterilmeyecektir.",
+      copyBtn: "Bilgileri Kopyala",
+      close: "Tamam"
+    },
+    reports: {
+      title: "Raporlar",
+      totalAgencies: "Toplam Acente",
+      activeAgencies: "Aktif",
+      disabledAgencies: "Devre Dışı",
+      totalSubAgencies: "Toplam Alt Acente",
+      mySubAgencies: "Alt Acentelerim",
+      myStudents: "Öğrencilerim",
+      myStatus: "Hesap Durumu",
+      perAgencyBreakdown: "Acenteye Göre Öğrenciler",
+      perSubAgencyBreakdown: "Alt Acenteye Göre Öğrenciler",
+      noData: "Henüz veri yok."
+    },
     fallback: {
       config: "yapılandırması",
       msg: "Bu yönetim modülü aktif olup arka plan parametrelerini bekliyor."
@@ -263,6 +365,8 @@ export const adminDict = {
     sidebar: {
       mainMenu: "القائمة الرئيسية",
       dashboard: "لوحة القيادة",
+      agencies: "الوكالات",
+      subagencies: "الوكالات الفرعية",
       front_office: "المكتب الأمامي",
       student_info: "معلومات الطالب",
       fees: "تحصيل الرسوم",
@@ -321,7 +425,13 @@ export const adminDict = {
       searchPlaceholder: "ابحث عن طريق اسم الطالب...",
       listView: "عرض القائمة",
       detailsView: "عرض التفاصيل",
-      cols: ["رقم القبول", "اسم الطالب", "الصف", "تاريخ الميلاد", "الجنس", "الجوال", "مدفوع", "إجراء"]
+      cols: ["رقم القبول", "اسم الطالب", "الصف", "القسم", "البريد الإلكتروني", "الهاتف", "إجراء"],
+      addBtn: "+ إضافة طالب",
+      name: "الاسم الكامل",
+      email: "البريد الإلكتروني",
+      phone: "رقم الهاتف",
+      nationality: "الجنسية",
+      confirmDelete: "هل تريد حذف سجل هذا الطالب؟"
     },
     fees: {
       title: "البحث عن الرسوم المستحقة",
@@ -383,6 +493,49 @@ export const adminDict = {
       title: "قائمة الأحداث",
       addBtn: "+ إضافة حدث",
       cols: ["عنوان الحدث", "المكان", "تاريخ البدء", "تاريخ الانتهاء", "إجراء"]
+    },
+    agencies: {
+      title: "الوكالات",
+      addBtn: "+ إضافة وكالة",
+      cols: ["الاسم", "البريد الإلكتروني", "الحالة", "إجراء"],
+      name: "اسم الوكالة",
+      email: "البريد الإلكتروني",
+      password: "كلمة المرور",
+      submit: "إنشاء وكالة",
+      passwordRevealTitle: "تم إنشاء الوكالة",
+      passwordRevealWarning: "احفظ كلمة المرور هذه الآن — لن تظهر مرة أخرى.",
+      copyBtn: "نسخ بيانات الاعتماد",
+      close: "تم",
+      active: "نشط",
+      disabled: "معطل",
+      enable: "تفعيل",
+      disable: "تعطيل"
+    },
+    subagencies: {
+      title: "الوكالات الفرعية",
+      addBtn: "+ إضافة وكالة فرعية",
+      cols: ["الاسم", "البريد الإلكتروني", "الحالة", "إجراء"],
+      name: "اسم الوكالة الفرعية",
+      email: "البريد الإلكتروني",
+      password: "كلمة المرور",
+      submit: "إنشاء وكالة فرعية",
+      passwordRevealTitle: "تم إنشاء الوكالة الفرعية",
+      passwordRevealWarning: "احفظ كلمة المرور هذه الآن — لن تظهر مرة أخرى.",
+      copyBtn: "نسخ بيانات الاعتماد",
+      close: "تم"
+    },
+    reports: {
+      title: "التقارير",
+      totalAgencies: "إجمالي الوكالات",
+      activeAgencies: "نشط",
+      disabledAgencies: "معطل",
+      totalSubAgencies: "إجمالي الوكالات الفرعية",
+      mySubAgencies: "وكالاتي الفرعية",
+      myStudents: "طلابي",
+      myStatus: "حالة الحساب",
+      perAgencyBreakdown: "الطلاب حسب الوكالة",
+      perSubAgencyBreakdown: "الطلاب حسب الوكالة الفرعية",
+      noData: "لا توجد بيانات بعد."
     },
     fallback: {
       config: "ترتيب",
