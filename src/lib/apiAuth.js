@@ -2,7 +2,6 @@
 // Server-only helper shared by Route Handlers to authenticate and authorize callers.
 // Re-derives the caller's role from Firestore (never trusts a client-sent role claim).
 
-import { randomBytes } from "crypto";
 import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
 
 export class ApiAuthError extends Error {
@@ -39,9 +38,4 @@ export async function verifyCallerRole(request, allowedRoles) {
   if (!allowedRoles.includes(profile.role)) throw new ApiAuthError(403, "You do not have permission to perform this action.");
 
   return { uid, profile };
-}
-
-/** Generates a random, URL-safe password for a newly created portal account. */
-export function generatePassword() {
-  return randomBytes(12).toString("base64url");
 }

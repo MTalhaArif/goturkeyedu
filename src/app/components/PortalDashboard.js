@@ -815,8 +815,8 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
   );
 
   const CreateAccountModal = ({ kind, onClose }) => {
-    const [form, setForm] = useState({ name: "", email: "" });
-    const [result, setResult] = useState(null); // { email, password } once created
+    const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", address: "", city: "" });
+    const [result, setResult] = useState(null); // { email, password } once created — shown back for manual sending until SMTP exists
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const labels = kind === "agency" ? t.agencies : t.subagencies;
@@ -844,8 +844,22 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
       }
     };
 
+    const field = (key, label, opts = {}) => (
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>{label}</label>
+        <input
+          required={opts.required}
+          type={opts.type || "text"}
+          minLength={opts.minLength}
+          value={form[key]}
+          onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
+          style={{ width: "100%", padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 7, outline: "none" }}
+        />
+      </div>
+    );
+
     return (
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", overflowY: "auto", padding: "40px 16px" }}>
         <div style={{ background: "white", borderRadius: 16, padding: 32, maxWidth: 440, width: "90%", position: "relative" }}>
           <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "#ef4444", color: "white", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontSize: 18, fontWeight: 700 }}>×</button>
 
@@ -853,15 +867,13 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
             <form onSubmit={handleCreate}>
               <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: "#0f172a" }}>{labels.addBtn}</h3>
               {error && <div style={{ background: "rgba(224,60,49,0.08)", border: "1px solid rgba(224,60,49,0.3)", borderRadius: 8, padding: "10px 14px", marginBottom: 16, color: "#E03C31", fontSize: 13 }}>⚠️ {error}</div>}
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>{labels.name}</label>
-                <input required value={form.name} onChange={e => setForm(p => ({...p, name: e.target.value}))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 7, outline: "none" }} />
-              </div>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#64748b", display: "block", marginBottom: 4 }}>{labels.email}</label>
-                <input required type="email" value={form.email} onChange={e => setForm(p => ({...p, email: e.target.value}))} style={{ width: "100%", padding: "10px 12px", border: "1px solid #e2e8f0", borderRadius: 7, outline: "none" }} />
-              </div>
-              <button type="submit" disabled={loading} style={{ width: "100%", background: "#E03C31", color: "white", border: "none", padding: "12px", borderRadius: 8, fontWeight: 700, cursor: "pointer", opacity: loading ? 0.7 : 1 }}>
+              {field("name", labels.name, { required: true })}
+              {field("email", labels.email, { required: true, type: "email" })}
+              {field("password", labels.password, { required: true, type: "text", minLength: 6 })}
+              {field("phone", labels.phone)}
+              {field("address", labels.address)}
+              {field("city", labels.city)}
+              <button type="submit" disabled={loading} style={{ width: "100%", background: "#E03C31", color: "white", border: "none", padding: "12px", borderRadius: 8, fontWeight: 700, cursor: "pointer", opacity: loading ? 0.7 : 1, marginTop: 6 }}>
                 {loading ? "..." : labels.submit}
               </button>
             </form>
