@@ -227,6 +227,11 @@ button { font-family: var(--font-body); }
   .step-content-panel { padding: 30px; }
 }
 
+@media (max-width: 900px) {
+  .finder-layout { grid-template-columns: 1fr !important; }
+  .finder-sidebar { position: static !important; }
+}
+
 @media (max-width: 768px) {
   .nav-links { display: none; }
   .mobile-toggle { display: block; }

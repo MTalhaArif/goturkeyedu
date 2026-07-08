@@ -24,25 +24,25 @@ export default function UniversitiesPage() {
         <div style={{ background: "var(--secondary)", borderRadius: 16, padding: "40px 50px", marginBottom: 40, color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h1 style={{ fontSize: 36, marginBottom: 10 }}>{t.universitiesPageTitle}</h1>
-            <p style={{ opacity: 0.8, fontSize: 16 }}>Türkiye has 208 universities — 129 State and 79 Foundation universities</p>
+            <p style={{ opacity: 0.8, fontSize: 16 }}>{t.uniPageSubtitle}</p>
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 52, fontWeight: 900, color: "var(--accent)" }}>{filtered.length}</div>
-            <div style={{ fontSize: 14, opacity: 0.8 }}>Universities Shown</div>
+            <div style={{ fontSize: 14, opacity: 0.8 }}>{t.universitiesShownLabel}</div>
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 30 }}>
+        <div className="finder-layout" style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 30 }}>
           {/* FILTERS SIDEBAR */}
-          <div style={{ background: "white", borderRadius: 16, padding: 30, boxShadow: "0 4px 20px rgba(0,0,0,0.05)", alignSelf: "start", position: "sticky", top: 80 }}>
-            <h3 style={{ color: "var(--secondary)", borderBottom: "2px solid var(--border)", paddingBottom: 15, marginBottom: 25 }}>Filter Universities</h3>
+          <div className="finder-sidebar" style={{ background: "white", borderRadius: 16, padding: 30, boxShadow: "0 4px 20px rgba(0,0,0,0.05)", alignSelf: "start", position: "sticky", top: 80 }}>
+            <h3 style={{ color: "var(--secondary)", borderBottom: "2px solid var(--border)", paddingBottom: 15, marginBottom: 25 }}>{t.filterUniversitiesHeading}</h3>
 
             {/* Search */}
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: "block", fontWeight: 600, marginBottom: 8, fontSize: 14 }}>Search</label>
+              <label style={{ display: "block", fontWeight: 600, marginBottom: 8, fontSize: 14 }}>{t.searchLabel}</label>
               <input
                 type="text"
-                placeholder="Search university name..."
+                placeholder={t.searchByNamePlaceholder}
                 className="form-input"
                 value={searchText}
                 onChange={e => setSearchText(e.target.value)}
@@ -51,12 +51,12 @@ export default function UniversitiesPage() {
 
             {/* Type */}
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: "block", fontWeight: 600, marginBottom: 8, fontSize: 14 }}>University Type</label>
+              <label style={{ display: "block", fontWeight: 600, marginBottom: 8, fontSize: 14 }}>{t.universityTypeLabel}</label>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {["", "State", "Foundation"].map(type => (
                   <label key={type} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14 }}>
                     <input type="radio" name="type" checked={selectedType === type} onChange={() => setSelectedType(type)} />
-                    {type === "" ? "All Types" : type === "State" ? t.stateUni : t.foundationUni}
+                    {type === "" ? t.allTypes : type === "State" ? t.stateUni : t.foundationUni}
                   </label>
                 ))}
               </div>
@@ -74,12 +74,12 @@ export default function UniversitiesPage() {
             </div>
 
             <button className="btn-primary" style={{ width: "100%", marginBottom: 10 }} onClick={() => { setSelectedCity(""); setSelectedType(""); setSearchText(""); }}>
-              Clear All Filters
+              {t.clearAllFiltersBtn}
             </button>
 
             {/* City Quick Filters */}
             <div style={{ marginTop: 25 }}>
-              <label style={{ display: "block", fontWeight: 600, marginBottom: 10, fontSize: 14 }}>Popular Cities</label>
+              <label style={{ display: "block", fontWeight: 600, marginBottom: 10, fontSize: 14 }}>{t.popularCitiesLabel}</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {["İstanbul","Ankara","İzmir","Bursa","Antalya"].map(city => (
                   <button key={city} onClick={() => setSelectedCity(city)} style={{ background: selectedCity === city ? "var(--primary)" : "rgba(26,35,126,0.07)", color: selectedCity === city ? "white" : "var(--secondary)", border: "none", padding: "5px 12px", borderRadius: 20, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
@@ -102,8 +102,8 @@ export default function UniversitiesPage() {
             {filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 40px", background: "white", borderRadius: 16 }}>
                 <div style={{ fontSize: 50, marginBottom: 20 }}>🔍</div>
-                <h3>No universities found</h3>
-                <p style={{ color: "var(--text-muted)" }}>Try adjusting your filters</p>
+                <h3>{t.noUniFoundTitle}</h3>
+                <p style={{ color: "var(--text-muted)" }}>{t.noUniFoundMsg}</p>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -118,12 +118,12 @@ export default function UniversitiesPage() {
                         <h3 style={{ color: "white", fontSize: 19, marginBottom: 4 }}>{uni.name}</h3>
                         <div style={{ display: "flex", gap: 18, fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
                           <span>📍 {uni.city}</span>
-                          <span>🏢 {uni.type}</span>
+                          <span>🏢 {uni.type === "State" ? t.stateUni : t.foundationUni}</span>
                           <span>🌐 {uni.website}</span>
                         </div>
                       </div>
                       <span style={{ background: uni.type === "State" ? "rgba(255,179,0,0.25)" : "rgba(255,255,255,0.15)", color: "white", padding: "4px 14px", borderRadius: 20, fontSize: 13, fontWeight: 700, border: "1px solid rgba(255,255,255,0.3)" }}>
-                        {uni.type}
+                        {uni.type === "State" ? t.stateUni : t.foundationUni}
                       </span>
                     </div>
 
@@ -134,7 +134,7 @@ export default function UniversitiesPage() {
 
                     {/* Programs */}
                     <div style={{ padding: "20px 28px" }}>
-                      <h4 style={{ color: "var(--secondary)", marginBottom: 14, fontSize: 15 }}>Available Programs ({uni.programs.length})</h4>
+                      <h4 style={{ color: "var(--secondary)", marginBottom: 14, fontSize: 15 }}>{t.availableProgramsLabel} ({uni.programs.length})</h4>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
                         {uni.programs.map((prog, i) => (
                           <span key={i} style={{ background: "rgba(26,35,126,0.06)", color: "var(--secondary)", padding: "5px 12px", borderRadius: 6, fontSize: 13, fontWeight: 500 }}>
@@ -147,7 +147,7 @@ export default function UniversitiesPage() {
                           {t.universityList}
                         </a>
                         <a href={`https://${uni.website}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, padding: "8px 20px", border: "2px solid var(--secondary)", color: "var(--secondary)", borderRadius: 8, fontWeight: 600, display: "inline-block", transition: "all 0.2s" }}>
-                          Visit Website ↗
+                          {t.visitWebsiteLabel} ↗
                         </a>
                       </div>
                     </div>

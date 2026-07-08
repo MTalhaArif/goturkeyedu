@@ -70,6 +70,7 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
 
   // Certificate module state (must be at top level — Rules of Hooks)
   const [certTab, setCertTab] = useState("templates");
+  const [certLang, setCertLang] = useState("EN"); // output language of the generated certificate/ID card — independent of the admin dashboard's own display language
   const [certPreview, setCertPreview] = useState(null);
   const [genCriteria, setGenCriteria] = useState({ cls: "", section: "", cert: "" });
   const [genStudents, setGenStudents] = useState([]);
@@ -449,6 +450,55 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
 
   // -- CERTIFICATE MODULE (visual design unchanged; generate/ID-card tabs now read
   //    from the real, tenant-scoped `students` list instead of hardcoded mock data) --
+  // Output-language text for the generated certificate/ID card itself (the student-facing
+  // document), independent of adminDict which only covers the dashboard's own UI chrome.
+  const CERT_TEXT = {
+    EN: {
+      academy: "GO TURKEY AND STUDY ACADEMY",
+      certificate: "CERTIFICATE",
+      ofAppreciation: "OF APPRECIATION",
+      presentedTo: "This certificate is proudly presented to",
+      admissionNo: "Admission No",
+      bodyLine1: (cls) => <>Has successfully completed the <strong>{cls}</strong> (Turkish Language Course) Programme</>,
+      bodyLine2: "This Certificate grade equals to Common European Framework of Reference Language Level",
+      date: "DATE",
+      signature: "SIGNATURE",
+      verify: "VERIFY",
+      verifyPrefix: "Verify",
+      print: "Print",
+      studentId: "STUDENT ID",
+      printIdCard: "Print ID Card",
+      academyShort: "Go Turkey & Study Academy",
+    },
+    TR: {
+      academy: "GO TURKEY AND STUDY ACADEMY",
+      certificate: "SERTİFİKA",
+      ofAppreciation: "TAKDİR BELGESİ",
+      presentedTo: "Bu sertifika onurla takdim edilir",
+      admissionNo: "Kayıt No",
+      bodyLine1: (cls) => <><strong>{cls}</strong> (Türkçe Dil Kursu) Programını başarıyla tamamlamıştır</>,
+      bodyLine2: "Bu Sertifika derecesi, Avrupa Dilleri Ortak Çerçeve Programı seviyesine eşittir",
+      date: "TARİH",
+      signature: "İMZA",
+      verify: "DOĞRULA",
+      verifyPrefix: "Doğrulama",
+      print: "Yazdır",
+      studentId: "ÖĞRENCİ KİMLİĞİ",
+      printIdCard: "Kimlik Kartını Yazdır",
+      academyShort: "Go Turkey & Study Academy",
+    },
+  };
+
+  const LangToggle = ({ value, onChange }) => (
+    <div style={{ display: "inline-flex", background: "#f1f5f9", borderRadius: 8, padding: 3, gap: 2 }}>
+      {["EN", "TR"].map(l => (
+        <button key={l} onClick={() => onChange(l)} style={{ padding: "5px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: value === l ? "#E03C31" : "transparent", color: value === l ? "white" : "#64748b" }}>
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+
   const certTemplates = [
     { id: 1, name: "GoTurkey", bg: "Standard Blue", status: "Active" },
     { id: 2, name: "GO TURKEY INGILIZCE", bg: "English Template", status: "Active" },
@@ -464,10 +514,14 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
 
   const CertPreviewModal = ({ student, onClose }) => {
     const qrValue = `https://goturkey.gen.tr/verify/${student.admNo}`;
+    const ct = CERT_TEXT[certLang];
     return (
       <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>
         <div style={{ background: "white", borderRadius: 16, padding: 32, maxWidth: 680, width: "90%", position: "relative" }} onClick={e => e.stopPropagation()}>
           <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "#ef4444", color: "white", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontSize: 18, fontWeight: 700 }}>×</button>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+            <LangToggle value={certLang} onChange={setCertLang} />
+          </div>
           {/* Certificate preview */}
           <div style={{ background: "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)", borderRadius: 12, padding: "40px 48px", color: "white", textAlign: "center", position: "relative", overflow: "hidden", marginBottom: 20 }}>
             <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 12px)", pointerEvents: "none" }} />
@@ -475,21 +529,21 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
               <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🇹🇷</div>
               <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>🎓</div>
             </div>
-            <div style={{ fontSize: 11, letterSpacing: 4, opacity: 0.7, marginBottom: 6 }}>GO TURKEY AND STUDY ACADEMY</div>
-            <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 2, marginBottom: 4 }}>CERTIFICATE</div>
-            <div style={{ fontSize: 16, opacity: 0.8, marginBottom: 24 }}>OF APPRECIATION</div>
+            <div style={{ fontSize: 11, letterSpacing: 4, opacity: 0.7, marginBottom: 6 }}>{ct.academy}</div>
+            <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: 2, marginBottom: 4 }}>{ct.certificate}</div>
+            <div style={{ fontSize: 16, opacity: 0.8, marginBottom: 24 }}>{ct.ofAppreciation}</div>
             <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 8, padding: "16px 24px", marginBottom: 20 }}>
-              <div style={{ fontSize: 13, opacity: 0.7, marginBottom: 4 }}>This certificate is proudly presented to</div>
+              <div style={{ fontSize: 13, opacity: 0.7, marginBottom: 4 }}>{ct.presentedTo}</div>
               <div style={{ fontSize: 22, fontWeight: 800 }}>{student.name}</div>
-              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>Admission No: {student.admNo}</div>
+              <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>{ct.admissionNo}: {student.admNo}</div>
             </div>
             <div style={{ fontSize: 13, opacity: 0.8, lineHeight: 1.7, marginBottom: 24 }}>
-              Has successfully completed the <strong>{student.class}</strong> (Turkish Language Course) Programme<br />
-              This Certificate grade equals to Common European Framework of Reference Language Level
+              {ct.bodyLine1(student.class)}<br />
+              {ct.bodyLine2}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ width: 120, borderTop: "1px solid rgba(255,255,255,0.4)", paddingTop: 6, fontSize: 12, opacity: 0.7 }}>DATE</div>
+                <div style={{ width: 120, borderTop: "1px solid rgba(255,255,255,0.4)", paddingTop: 6, fontSize: 12, opacity: 0.7 }}>{ct.date}</div>
               </div>
               {/* QR Code placeholder */}
               <div style={{ background: "white", borderRadius: 8, padding: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -498,16 +552,16 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
                     <div key={i} style={{ background: [0,1,2,3,4,5,7,14,21,28,35,42,8,15,22,29,36,43,6,13,20,27,34,41,48,10,11,12,36,37,38,23,25].includes(i) ? "#0f172a" : "white", borderRadius: 1 }} />
                   ))}
                 </div>
-                <div style={{ color: "#0f172a", fontSize: 9, fontWeight: 700 }}>VERIFY</div>
+                <div style={{ color: "#0f172a", fontSize: 9, fontWeight: 700 }}>{ct.verify}</div>
               </div>
               <div style={{ textAlign: "center" }}>
-                <div style={{ width: 120, borderTop: "1px solid rgba(255,255,255,0.4)", paddingTop: 6, fontSize: 12, opacity: 0.7 }}>SIGNATURE</div>
+                <div style={{ width: 120, borderTop: "1px solid rgba(255,255,255,0.4)", paddingTop: 6, fontSize: 12, opacity: 0.7 }}>{ct.signature}</div>
               </div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <div style={{ fontSize: 12, color: "#64748b", background: "#f8fafc", padding: "6px 14px", borderRadius: 6 }}>🔗 Verify: goturkey.gen.tr/verify/{student.admNo}</div>
-            <button style={{ background: "#E03C31", color: "white", border: "none", padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>🖨️ Print</button>
+            <div style={{ fontSize: 12, color: "#64748b", background: "#f8fafc", padding: "6px 14px", borderRadius: 6 }}>🔗 {ct.verifyPrefix}: goturkey.gen.tr/verify/{student.admNo}</div>
+            <button style={{ background: "#E03C31", color: "white", border: "none", padding: "8px 20px", borderRadius: 8, cursor: "pointer", fontWeight: 600 }}>🖨️ {ct.print}</button>
           </div>
         </div>
       </div>
@@ -675,11 +729,15 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
 
       {/* ID CARD TAB */}
       {certTab === "idcard" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
+        <div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+            <LangToggle value={certLang} onChange={setCertLang} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
           {students.map(s => (
             <div key={s.id} style={{ background: "linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)", borderRadius: 16, padding: 20, color: "white", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, opacity: 0.7 }}>STUDENT ID</div>
+                <div style={{ fontSize: 11, letterSpacing: 1.5, opacity: 0.7 }}>{CERT_TEXT[certLang].studentId}</div>
                 <div style={{ fontSize: 20 }}>🇹🇷</div>
               </div>
               <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
@@ -694,14 +752,14 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
               </div>
               {/* Mini QR */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 16 }}>
-                <div style={{ fontSize: 10, opacity: 0.6 }}>Go Turkey & Study Academy<br />2026 – 2027</div>
+                <div style={{ fontSize: 10, opacity: 0.6 }}>{CERT_TEXT[certLang].academyShort}<br />2026 – 2027</div>
                 <div style={{ background: "white", borderRadius: 4, padding: 4, width: 40, height: 40, display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 1 }}>
                   {Array.from({length:25}).map((_,i) => (
                     <div key={i} style={{ background: [0,1,2,3,4,5,9,10,14,15,19,20,21,22,23,24].includes(i) ? "#0f172a" : "white", borderRadius: 0.5 }} />
                   ))}
                 </div>
               </div>
-              <button style={{ width: "100%", marginTop: 14, background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.25)", padding: "7px", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 12 }}>🖨️ Print ID Card</button>
+              <button style={{ width: "100%", marginTop: 14, background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.25)", padding: "7px", borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 12 }}>🖨️ {CERT_TEXT[certLang].printIdCard}</button>
             </div>
           ))}
           {students.length === 0 && (
@@ -710,6 +768,7 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
               <p style={{ fontSize: 15 }}>No students yet — add one from Student Information first.</p>
             </div>
           )}
+          </div>
         </div>
       )}
     </>
