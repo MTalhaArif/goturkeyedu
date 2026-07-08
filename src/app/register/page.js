@@ -1,12 +1,15 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { upsertUser } from "@/lib/firestore";
 
-export default function RegisterPage() {
+function RegisterPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const interestedUniversity = searchParams.get("university") || "";
+  const interestedProgram = searchParams.get("program") || "";
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "", phone: "",
@@ -45,6 +48,8 @@ export default function RegisterPage() {
         nationality: form.nationality,
         educationLevel: form.educationLevel,
         targetProgram: form.targetProgram,
+        interestedUniversity: interestedUniversity || null,
+        interestedProgram: interestedProgram || null,
         role: "student",
         status: "active",
         registeredAt: new Date().toISOString(),
@@ -106,6 +111,12 @@ export default function RegisterPage() {
           <h2 style={{ color: "var(--secondary)", fontSize: 22, marginBottom: 24, textAlign: "center" }}>
             {step === 1 ? "Personal Information" : step === 2 ? "Education Details" : "Create Your Account"}
           </h2>
+
+          {(interestedUniversity || interestedProgram) && (
+            <div style={{ background: "rgba(26,35,126,0.05)", border: "1px solid rgba(26,35,126,0.1)", borderRadius: 8, padding: "10px 16px", marginBottom: 20, fontSize: 13, color: "var(--secondary)", textAlign: "center" }}>
+              🎓 Applying to: <strong>{interestedProgram || "a program"}</strong>{interestedUniversity && <> at <strong>{interestedUniversity}</strong></>}
+            </div>
+          )}
 
           {/* Firebase badge */}
           {step === 3 && (
@@ -217,5 +228,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterPageInner />
+    </Suspense>
   );
 }

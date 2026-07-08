@@ -1,15 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { universities, uniqueCities } from "../../data/universities";
 import { useLanguage } from "@/app/context/LanguageContext";
 
-export default function StudySearchList() {
+function StudySearchListInner() {
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
   const [selectedLang, setSelectedLang] = useState("");
-  const [programSearch, setProgramSearch] = useState("");
+  const [programSearch, setProgramSearch] = useState(searchParams.get("university") || "");
   const [expandedUni, setExpandedUni] = useState(null);
 
   const filtered = universities.filter(u => {
@@ -204,9 +206,9 @@ export default function StudySearchList() {
                                       </span>
                                     </td>
                                     <td style={{ padding: "12px 14px" }}>
-                                      <button style={{ background: "var(--primary)", color: "white", border: "none", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: 12 }}>
+                                      <a href={`/register?university=${encodeURIComponent(uni.name)}&program=${encodeURIComponent(prog)}`} style={{ background: "var(--primary)", color: "white", border: "none", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: 12, textDecoration: "none", display: "inline-block" }}>
                                         {t.applyNow}
-                                      </button>
+                                      </a>
                                     </td>
                                   </tr>
                                 ))}
@@ -230,5 +232,13 @@ export default function StudySearchList() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StudySearchList() {
+  return (
+    <Suspense fallback={null}>
+      <StudySearchListInner />
+    </Suspense>
   );
 }

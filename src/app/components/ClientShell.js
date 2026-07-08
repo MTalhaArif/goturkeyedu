@@ -44,6 +44,7 @@ function Header() {
               <option value="EN">EN</option>
               <option value="TR">TR</option>
               <option value="AR">AR</option>
+              <option value="FR">FR</option>
             </select>
           </div>
         </div>
