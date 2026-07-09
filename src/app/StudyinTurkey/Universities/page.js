@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { universities, uniqueCities } from "../../data/universities";
+import { universities, uniqueCities, getAllPrograms } from "../../data/universities";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 
@@ -134,13 +134,18 @@ export default function UniversitiesPage() {
 
                     {/* Programs */}
                     <div style={{ padding: "20px 28px" }}>
-                      <h4 style={{ color: "var(--secondary)", marginBottom: 14, fontSize: 15 }}>{t.availableProgramsLabel} ({uni.programs.length})</h4>
+                      <h4 style={{ color: "var(--secondary)", marginBottom: 14, fontSize: 15 }}>{t.availableProgramsLabel} ({getAllPrograms(uni).length})</h4>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
-                        {uni.programs.map((prog, i) => (
+                        {getAllPrograms(uni).slice(0, 8).map((prog, i) => (
                           <span key={i} style={{ background: "rgba(26,35,126,0.06)", color: "var(--secondary)", padding: "5px 12px", borderRadius: 6, fontSize: 13, fontWeight: 500 }}>
-                            {prog}
+                            {prog.name}
                           </span>
                         ))}
+                        {getAllPrograms(uni).length > 8 && (
+                          <span style={{ background: "rgba(224,60,49,0.08)", color: "var(--primary)", padding: "5px 12px", borderRadius: 6, fontSize: 13, fontWeight: 700 }}>
+                            +{getAllPrograms(uni).length - 8}
+                          </span>
+                        )}
                       </div>
                       <div style={{ display: "flex", gap: 12 }}>
                         <a href={`/StudySearch/List?university=${encodeURIComponent(uni.name)}`} className="btn-primary" style={{ fontSize: 13, padding: "8px 20px" }}>

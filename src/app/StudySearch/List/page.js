@@ -1,7 +1,7 @@
 "use client";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { universities, uniqueCities, getProgramLevel, getInstructionLanguage } from "../../data/universities";
+import { universities, uniqueCities, getAllPrograms, getInstructionLanguage } from "../../data/universities";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 function StudySearchListInner() {
@@ -18,21 +18,21 @@ function StudySearchListInner() {
   const langLabels = { english: t.langEnglish, turkish: t.langTurkish, arabic: t.langArabic, french: t.langFrench };
 
   const programMatchesSearchAndLevel = (uni, p) => {
-    const searchMatch = !programSearch || p.toLowerCase().includes(programSearch.toLowerCase()) || uni.name.toLowerCase().includes(programSearch.toLowerCase());
-    const levelMatch = !selectedLevel || getProgramLevel(p) === selectedLevel;
-    const langMatch = !selectedLang || getInstructionLanguage(uni, p) === selectedLang;
+    const searchMatch = !programSearch || p.name.toLowerCase().includes(programSearch.toLowerCase()) || uni.name.toLowerCase().includes(programSearch.toLowerCase());
+    const levelMatch = !selectedLevel || p.level === selectedLevel;
+    const langMatch = !selectedLang || getInstructionLanguage(uni, p.name) === selectedLang;
     return searchMatch && levelMatch && langMatch;
   };
 
   const filtered = universities.filter(u => {
     const cityMatch = !selectedCity || u.city === selectedCity;
     const typeMatch = !selectedType || u.type === selectedType;
-    const progMatch = u.programs.some(p => programMatchesSearchAndLevel(u, p));
+    const progMatch = getAllPrograms(u).some(p => programMatchesSearchAndLevel(u, p));
     return cityMatch && typeMatch && progMatch;
   });
 
   const getFilteredPrograms = (uni) => {
-    return uni.programs.filter(p => programMatchesSearchAndLevel(uni, p));
+    return getAllPrograms(uni).filter(p => programMatchesSearchAndLevel(uni, p));
   };
 
   return (
@@ -50,7 +50,7 @@ function StudySearchListInner() {
               <div style={{ fontSize: 12, opacity: 0.8 }}>{t.universitiesStatLabel}</div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 40, fontWeight: 900, color: "var(--accent)" }}>{filtered.reduce((s, u) => s + u.programs.length, 0)}</div>
+              <div style={{ fontSize: 40, fontWeight: 900, color: "var(--accent)" }}>{filtered.reduce((s, u) => s + getAllPrograms(u).length, 0)}</div>
               <div style={{ fontSize: 12, opacity: 0.8 }}>{t.programsStatLabel}</div>
             </div>
           </div>
@@ -137,9 +137,10 @@ function StudySearchListInner() {
               </span>
             </div>
 
-            {(selectedLevel && selectedLevel !== "bachelor") || (selectedLang && selectedLang !== "english" && selectedLang !== "turkish") ? (
+            {selectedLevel === "associate" || selectedLevel === "master" || selectedLevel === "doctorate" || (selectedLang && selectedLang !== "english" && selectedLang !== "turkish") ? (
               <div style={{ background: "rgba(255,179,0,0.1)", border: "1px solid rgba(255,179,0,0.35)", color: "#8a5a00", borderRadius: 10, padding: "12px 18px", fontSize: 13.5, marginBottom: 18, display: "flex", flexDirection: "column", gap: 6 }}>
-                {selectedLevel && selectedLevel !== "bachelor" && <span>ℹ️ {t.gradLevelDataNotice}</span>}
+                {selectedLevel === "associate" && <span>ℹ️ {t.gradLevelDataNotice}</span>}
+                {(selectedLevel === "master" || selectedLevel === "doctorate") && <span>ℹ️ {t.gradLevelPartialNotice}</span>}
                 {selectedLang && selectedLang !== "english" && selectedLang !== "turkish" && <span>ℹ️ {t.langDataNotice}</span>}
               </div>
             ) : null}
@@ -166,7 +167,7 @@ function StudySearchListInner() {
                             <span>📍 {uni.city}</span>
                             <span>🏢 {uni.type === "State" ? t.stateUni : t.foundationUni}</span>
                             <span>🌐 {uni.website}</span>
-                            <span>🎓 {uni.programs.length} {t.programsSuffixLabel}</span>
+                            <span>🎓 {getAllPrograms(uni).length} {t.programsSuffixLabel}</span>
                           </div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -191,7 +192,7 @@ function StudySearchListInner() {
                           <div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                               {programs.slice(0, 8).map((p, i) => (
-                                <span key={i} style={{ background: "rgba(26,35,126,0.07)", color: "var(--secondary)", padding: "4px 11px", borderRadius: 5, fontSize: 12.5, fontWeight: 500 }}>{p}</span>
+                                <span key={i} style={{ background: "rgba(26,35,126,0.07)", color: "var(--secondary)", padding: "4px 11px", borderRadius: 5, fontSize: 12.5, fontWeight: 500 }}>{p.name}</span>
                               ))}
                               {programs.length > 8 && (
                                 <button onClick={() => setExpandedUni(uni.id)} style={{ background: "rgba(224,60,49,0.08)", color: "var(--primary)", border: "none", padding: "4px 11px", borderRadius: 5, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>+{programs.length - 8}</button>
@@ -214,15 +215,15 @@ function StudySearchListInner() {
                               <tbody>
                                 {programs.map((prog, i) => (
                                   <tr key={i} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "white" : "rgba(26,35,126,0.015)" }}>
-                                    <td style={{ padding: "12px 14px", fontWeight: 500 }}>{prog}</td>
-                                    <td style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: 13 }}>{levelLabels[getProgramLevel(prog)]}</td>
+                                    <td style={{ padding: "12px 14px", fontWeight: 500 }}>{prog.name}</td>
+                                    <td style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: 13 }}>{levelLabels[prog.level]}</td>
                                     <td style={{ padding: "12px 14px" }}>
                                       <span style={{ background: "rgba(0,120,60,0.1)", color: "#006633", padding: "2px 9px", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
-                                        {langLabels[getInstructionLanguage(uni, prog)]}
+                                        {langLabels[getInstructionLanguage(uni, prog.name)]}
                                       </span>
                                     </td>
                                     <td style={{ padding: "12px 14px" }}>
-                                      <a href={`/register?university=${encodeURIComponent(uni.name)}&program=${encodeURIComponent(prog)}`} style={{ background: "var(--primary)", color: "white", border: "none", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: 12, textDecoration: "none", display: "inline-block" }}>
+                                      <a href={`/register?university=${encodeURIComponent(uni.name)}&program=${encodeURIComponent(prog.name)}`} style={{ background: "var(--primary)", color: "white", border: "none", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: 12, textDecoration: "none", display: "inline-block" }}>
                                         {t.applyNow}
                                       </a>
                                     </td>
