@@ -1,14 +1,16 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { universities, uniqueCities, getAllPrograms } from "../../data/universities";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 
-export default function UniversitiesPage() {
+function UniversitiesPageInner() {
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedType, setSelectedType] = useState("");
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState(searchParams.get("university") || "");
 
   const filtered = universities.filter(u => {
     const cityMatch = !selectedCity || u.city === selectedCity;
@@ -164,5 +166,13 @@ export default function UniversitiesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function UniversitiesPage() {
+  return (
+    <Suspense fallback={null}>
+      <UniversitiesPageInner />
+    </Suspense>
   );
 }

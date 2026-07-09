@@ -181,7 +181,8 @@ function StudySearchListInner() {
                       {/* Address bar */}
                       <div style={{ padding: "10px 26px", background: "rgba(26,35,126,0.03)", borderBottom: "1px solid var(--border)", fontSize: 12.5, color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span>📌 {uni.address}</span>
-                        <div style={{ display: "flex", gap: 12, flexShrink: 0 }}>
+                        <div style={{ display: "flex", gap: 16, flexShrink: 0 }}>
+                          <a href={`/StudyinTurkey/Universities?university=${encodeURIComponent(uni.name)}`} style={{ fontSize: 12, color: "var(--secondary)", fontWeight: 600 }}>{t.universityDetails}</a>
                           <a href={`https://${uni.website}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--primary)", fontWeight: 600 }}>{t.visitWebsiteLabel} ↗</a>
                         </div>
                       </div>
