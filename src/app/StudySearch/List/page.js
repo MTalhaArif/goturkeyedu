@@ -1,12 +1,23 @@
 "use client";
 import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { universities, uniqueCities, getAllPrograms, getInstructionLanguage } from "../../data/universities";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 function StudySearchListInner() {
   const { t } = useLanguage();
+  const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Already-logged-in students go straight into their dashboard's application flow with
+  // this university/program pre-filled; everyone else registers first (which then lands
+  // them in the same place once their account exists).
+  const goToApply = (universityName, programName) => {
+    const qs = `?university=${encodeURIComponent(universityName)}&program=${encodeURIComponent(programName)}`;
+    const stored = typeof window !== "undefined" ? localStorage.getItem("goturkey_user") : null;
+    const isLoggedInStudent = stored && JSON.parse(stored).role === "student";
+    router.push((isLoggedInStudent ? "/dashboard" : "/register") + qs);
+  };
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
@@ -224,9 +235,9 @@ function StudySearchListInner() {
                                       </span>
                                     </td>
                                     <td style={{ padding: "12px 14px" }}>
-                                      <a href={`/register?university=${encodeURIComponent(uni.name)}&program=${encodeURIComponent(prog.name)}`} style={{ background: "var(--primary)", color: "white", border: "none", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: 12, textDecoration: "none", display: "inline-block" }}>
+                                      <button onClick={() => goToApply(uni.name, prog.name)} style={{ background: "var(--primary)", color: "white", border: "none", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontWeight: 700, fontSize: 12 }}>
                                         {t.applyNow}
-                                      </a>
+                                      </button>
                                     </td>
                                   </tr>
                                 ))}

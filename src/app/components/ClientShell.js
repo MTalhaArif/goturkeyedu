@@ -1,12 +1,24 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { usePathname } from "next/navigation";
 import ChatWidget from "./ChatWidget";
 
+const ROLE_HOME_PATHS = { student: "/dashboard", super_admin: "/admin/dashboard", agency: "/agency/dashboard", sub_agency: "/subagency/dashboard" };
+
 function Header() {
   const { lang, setLang, t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [session] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const stored = localStorage.getItem("goturkey_user");
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  const handleLogout = () => {
+    localStorage.removeItem("goturkey_user");
+    window.location.href = "/";
+  };
 
   return (
     <>
@@ -37,9 +49,18 @@ function Header() {
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
             </a>
             <div className="top-divider"></div>
-            <a href="/admin/login" className="top-auth-link" target="_blank" style={{ color: "#E03C31", fontWeight: 700 }}>Admin Portal</a>
-            <a href="/register" className="top-auth-link" target="_blank">{t.signUp}</a>
-            <a href="/login" className="top-auth-link" target="_blank">{t.signIn}</a>
+            {!session && <a href="/admin/login" className="top-auth-link" target="_blank" style={{ color: "#E03C31", fontWeight: 700 }}>Admin Portal</a>}
+            {session ? (
+              <>
+                <a href={ROLE_HOME_PATHS[session.role] || "/dashboard"} className="top-auth-link" style={{ fontWeight: 700 }}>👤 {session.name}</a>
+                <button onClick={handleLogout} className="top-auth-link" style={{ background: "none", border: "none", cursor: "pointer", font: "inherit", padding: 0 }}>{t.sdLogout}</button>
+              </>
+            ) : (
+              <>
+                <a href="/register" className="top-auth-link" target="_blank">{t.signUp}</a>
+                <a href="/login" className="top-auth-link" target="_blank">{t.signIn}</a>
+              </>
+            )}
             <a href="/contact" className="top-auth-link">{t.contact}</a>
             <select className="lang-select" value={lang} onChange={e => setLang(e.target.value)}>
               <option value="EN">EN</option>

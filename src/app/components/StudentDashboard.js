@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { getUserProfile, upsertUser, getApplication, upsertApplication, updateApplicationStage } from "@/lib/firestore";
 import { uploadApplicationFile } from "@/lib/storage";
@@ -8,6 +8,26 @@ import { universities } from "@/app/data/universities";
 
 const STATE_STEPS = ["documents_pending", "payment_pending", "payment_submitted", "payment_verified", "offer_made", "accepted"];
 const FOUNDATION_STEPS = ["documents_pending", "under_review", "offer_made", "accepted"];
+
+// The full document checklist a student can upload. `requiredFor` lists which target
+// education levels need this document as a prior-credential/identity requirement before
+// "Submit Documents" is enabled — everything else (language proficiency, other) is optional.
+const DOCUMENT_TYPES = [
+  { key: "passport", labelKey: "sdDocPassport", requiredFor: ["associate", "bachelor", "master", "doctorate"] },
+  { key: "picture", labelKey: "sdDocPicture", requiredFor: ["associate", "bachelor", "master", "doctorate"], isImage: true },
+  { key: "highSchool1", labelKey: "sdDocHighSchool1", requiredFor: ["associate", "bachelor"] },
+  { key: "highSchool2", labelKey: "sdDocHighSchool2", requiredFor: ["associate", "bachelor"] },
+  { key: "bachelorDegree", labelKey: "sdDocBachelorDegree", requiredFor: ["master"] },
+  { key: "bachelorTranscript", labelKey: "sdDocBachelorTranscript", requiredFor: ["master"] },
+  { key: "masterDegree", labelKey: "sdDocMasterDegree", requiredFor: ["doctorate"] },
+  { key: "masterTranscript", labelKey: "sdDocMasterTranscript", requiredFor: ["doctorate"] },
+  { key: "languageProficiency", labelKey: "sdDocLanguageProficiency", requiredFor: [] },
+  { key: "other", labelKey: "sdDocOther", requiredFor: [] },
+];
+
+function emptyDocuments() {
+  return Object.fromEntries(DOCUMENT_TYPES.map(d => [d.key, null]));
+}
 
 function findUniversityType(name) {
   if (!name) return null;
@@ -19,8 +39,9 @@ const card = { background: "white", borderRadius: 16, padding: 28, boxShadow: "0
 const label = { display: "block", fontWeight: 700, fontSize: 12, color: "var(--secondary)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" };
 const value = { fontSize: 15, color: "var(--text-main)", marginBottom: 16 };
 
-export default function StudentDashboard() {
+function StudentDashboardInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t, lang, setLang } = useLanguage();
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -40,28 +61,48 @@ export default function StudentDashboard() {
 
     (async () => {
       const p = await getUserProfile(u.uid);
-      setUser(u);
-      setProfile(p);
-      setProfileForm(p);
-
       let app = await getApplication(u.uid);
+
+      // Arriving from an "Apply Now" click (StudySearch/List) while already logged in —
+      // pick up the target university/program from the URL rather than re-registering.
+      const queryUniversity = searchParams.get("university");
+      const queryProgram = searchParams.get("program");
+      const appliedFromQuery = queryUniversity && (!app || app.stage === "documents_pending");
+
+      const universityName = appliedFromQuery ? queryUniversity : (app?.universityName ?? p?.interestedUniversity ?? null);
+      const programName = appliedFromQuery ? (queryProgram || null) : (app?.programName ?? p?.interestedProgram ?? null);
+
+      if (appliedFromQuery) {
+        await upsertUser(u.uid, { interestedUniversity: universityName, interestedProgram: programName });
+        p.interestedUniversity = universityName;
+        p.interestedProgram = programName;
+      }
+
       if (!app) {
-        const universityName = p?.interestedUniversity || null;
         const initial = {
           universityName,
-          programName: p?.interestedProgram || null,
+          programName,
           universityType: findUniversityType(universityName),
           stage: "documents_pending",
-          documents: { diploma: null, transcript: null, other: [] },
+          documents: emptyDocuments(),
           paymentScreenshot: null,
           offer: null,
           adminNotes: "",
         };
         await upsertApplication(u.uid, initial);
         app = { id: u.uid, ...initial };
+      } else if (appliedFromQuery) {
+        const patch = { universityName, programName, universityType: findUniversityType(universityName) };
+        await upsertApplication(u.uid, patch);
+        app = { ...app, ...patch };
       }
+
+      setUser(u);
+      setProfile(p);
+      setProfileForm(p);
       setApplication(app);
       setLoading(false);
+      if (appliedFromQuery) setActiveTab("documents");
     })();
   }, []);
 
@@ -100,15 +141,9 @@ export default function StudentDashboard() {
     setUploading(kind);
     try {
       const uploaded = await uploadApplicationFile(user.uid, kind, file);
-      let patch;
-      if (kind === "payment") {
-        patch = { paymentScreenshot: uploaded };
-      } else if (kind === "other") {
-        const nextOther = [...(application.documents?.other || []), uploaded];
-        patch = { documents: { ...application.documents, other: nextOther } };
-      } else {
-        patch = { documents: { ...application.documents, [kind]: uploaded } };
-      }
+      const patch = kind === "payment"
+        ? { paymentScreenshot: uploaded }
+        : { documents: { ...application.documents, [kind]: uploaded } };
       await upsertApplication(user.uid, patch);
       setApplication(prev => ({ ...prev, ...patch }));
     } catch (err) {
@@ -116,6 +151,11 @@ export default function StudentDashboard() {
     } finally {
       setUploading(null);
     }
+  };
+
+  const requiredDocsMissing = () => {
+    const level = profile?.educationLevel || "bachelor";
+    return DOCUMENT_TYPES.some(d => d.requiredFor.includes(level) && !application.documents?.[d.key]);
   };
 
   const submitDocuments = async () => {
@@ -142,6 +182,7 @@ export default function StudentDashboard() {
   const steps = application.universityType === "State" ? STATE_STEPS : FOUNDATION_STEPS;
   const stepIndex = Math.max(0, steps.indexOf(application.stage));
   const docsSubmitted = application.stage !== "documents_pending";
+  const uploadedCount = DOCUMENT_TYPES.filter(d => application.documents?.[d.key]).length;
 
   const stageLabels = {
     documents_pending: t.sdStageDocumentsPending,
@@ -257,59 +298,62 @@ export default function StudentDashboard() {
         {/* DOCUMENTS TAB */}
         {activeTab === "documents" && (
           <div style={card}>
-            <h2 style={{ color: "var(--secondary)", fontSize: 20, marginBottom: 20 }}>{t.sdTabDocuments}</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <h2 style={{ color: "var(--secondary)", fontSize: 20, letterSpacing: "0.5px" }}>{t.sdTabDocuments.toUpperCase()}</h2>
+              <span style={{ color: "var(--text-muted)", fontSize: 14 }}>{uploadedCount} / {DOCUMENT_TYPES.length} {t.sdDocsUploadedLabel}</span>
+            </div>
 
-            {!application.universityName ? (
-              <div style={{ color: "var(--text-muted)", fontSize: 14 }}>{t.sdSelectUniversityFirstMsg}</div>
-            ) : (
-              <>
-                {["diploma", "transcript", "other"].map(kind => (
-                  <div key={kind} style={{ marginBottom: 22, paddingBottom: 22, borderBottom: kind !== "other" ? "1px solid var(--border)" : "none" }}>
-                    <label style={label}>{kind === "diploma" ? t.sdDiplomaLabel : kind === "transcript" ? t.sdTranscriptLabel : t.sdOtherDocsLabel}</label>
-                    {kind !== "other" ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                        <span style={{ fontSize: 14, color: application.documents?.[kind] ? "#006633" : "var(--text-muted)" }}>
-                          {application.documents?.[kind] ? `✅ ${t.sdUploadedLabel}: ${application.documents[kind].name}` : `⬜ ${t.sdNotUploadedLabel}`}
-                        </span>
-                        {application.documents?.[kind] && (
-                          <a href={application.documents[kind].url} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "var(--primary)", fontWeight: 600 }}>{t.sdViewFileLink}</a>
-                        )}
-                        {!docsSubmitted && (
-                          <label style={{ fontSize: 13, color: "var(--secondary)", fontWeight: 700, cursor: "pointer" }}>
-                            {uploading === kind ? "…" : (application.documents?.[kind] ? t.sdReuploadBtn : t.sdUploadBtn)}
-                            <input type="file" accept="application/pdf,image/jpeg,image/png" style={{ display: "none" }} onChange={e => handleUpload(kind, e.target.files[0])} disabled={uploading === kind} />
-                          </label>
-                        )}
-                      </div>
+            {application.universityName && (
+              <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 20 }}>
+                {t.sdApplyingToMsg}: <strong style={{ color: "var(--secondary)" }}>{application.programName ? `${application.programName} — ` : ""}{application.universityName}</strong>
+              </p>
+            )}
+            {!application.universityName && (
+              <div style={{ color: "var(--text-muted)", fontSize: 14, marginBottom: 20 }}>{t.sdSelectUniversityFirstMsg}</div>
+            )}
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 16, marginBottom: 24 }}>
+              {DOCUMENT_TYPES.map(doc => {
+                const uploaded = application.documents?.[doc.key];
+                return (
+                  <div key={doc.key} style={{ border: `1.5px solid ${uploaded ? "#8fd9b6" : "var(--border)"}`, borderRadius: 12, padding: 14, background: uploaded ? "rgba(0,120,60,0.03)" : "#fafafa" }}>
+                    <div style={{ height: 90, borderRadius: 8, background: uploaded && doc.isImage ? "none" : "rgba(0,0,0,0.03)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10, overflow: "hidden" }}>
+                      {uploaded && doc.isImage ? (
+                        <img src={uploaded.url} alt={t[doc.labelKey]} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <span style={{ fontSize: 32, opacity: uploaded ? 0.7 : 0.35 }}>📄</span>
+                      )}
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: "var(--secondary)", marginBottom: 8, lineHeight: 1.3 }}>{t[doc.labelKey]}</div>
+                    {uploaded ? (
+                      <a href={uploaded.url} target="_blank" rel="noreferrer" style={{ fontSize: 12.5, color: "var(--primary)", fontWeight: 700 }}>↗ {t.sdViewFileLink}</a>
                     ) : (
-                      <div>
-                        {(application.documents?.other || []).map((f, i) => (
-                          <div key={i} style={{ fontSize: 14, marginBottom: 6 }}>📎 {f.name} — <a href={f.url} target="_blank" rel="noreferrer" style={{ color: "var(--primary)", fontWeight: 600 }}>{t.sdViewFileLink}</a></div>
-                        ))}
-                        {!docsSubmitted && (
-                          <label style={{ fontSize: 13, color: "var(--secondary)", fontWeight: 700, cursor: "pointer" }}>
-                            {uploading === "other" ? "…" : t.sdUploadBtn}
-                            <input type="file" accept="application/pdf,image/jpeg,image/png" style={{ display: "none" }} onChange={e => handleUpload("other", e.target.files[0])} disabled={uploading === "other"} />
-                          </label>
-                        )}
-                      </div>
+                      <span style={{ fontSize: 12.5, color: "#94a3b8" }}>{t.sdNotUploadedLabel}</span>
+                    )}
+                    {!docsSubmitted && (
+                      <label style={{ display: "block", fontSize: 12, color: "var(--secondary)", fontWeight: 700, cursor: "pointer", marginTop: 6 }}>
+                        {uploading === doc.key ? "…" : (uploaded ? t.sdReuploadBtn : t.sdUploadBtn)}
+                        <input type="file" accept="application/pdf,image/jpeg,image/png" style={{ display: "none" }} onChange={e => handleUpload(doc.key, e.target.files[0])} disabled={uploading === doc.key} />
+                      </label>
                     )}
                   </div>
-                ))}
+                );
+              })}
+            </div>
 
-                {!docsSubmitted ? (
-                  <button
-                    onClick={submitDocuments}
-                    disabled={!application.documents?.diploma || !application.documents?.transcript}
-                    className="btn-primary"
-                    style={{ fontSize: 14, padding: "10px 24px", opacity: (!application.documents?.diploma || !application.documents?.transcript) ? 0.5 : 1 }}
-                  >
-                    {t.sdSubmitDocumentsBtn}
-                  </button>
-                ) : (
-                  <div style={{ color: "#006633", fontWeight: 600, fontSize: 14 }}>✅ {t.sdDocumentsSubmittedMsg}</div>
-                )}
-              </>
+            {application.universityName && (
+              !docsSubmitted ? (
+                <button
+                  onClick={submitDocuments}
+                  disabled={requiredDocsMissing()}
+                  className="btn-primary"
+                  style={{ fontSize: 14, padding: "10px 24px", opacity: requiredDocsMissing() ? 0.5 : 1 }}
+                >
+                  {t.sdSubmitDocumentsBtn}
+                </button>
+              ) : (
+                <div style={{ color: "#006633", fontWeight: 600, fontSize: 14 }}>✅ {t.sdDocumentsSubmittedMsg}</div>
+              )
             )}
           </div>
         )}
@@ -380,5 +424,13 @@ export default function StudentDashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function StudentDashboard() {
+  return (
+    <Suspense fallback={null}>
+      <StudentDashboardInner />
+    </Suspense>
   );
 }
