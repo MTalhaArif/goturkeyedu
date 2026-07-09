@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { usePathname } from "next/navigation";
+import ChatWidget from "./ChatWidget";
 
 function Header() {
   const { lang, setLang, t } = useLanguage();
@@ -232,6 +233,7 @@ export default function ClientShell({ children }) {
       <Header />
       <main>{children}</main>
       <Footer />
+      <ChatWidget />
     </>
   );
 }

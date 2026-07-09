@@ -1,7 +1,7 @@
 "use client";
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { universities, uniqueCities } from "../../data/universities";
+import { universities, uniqueCities, getProgramLevel, getInstructionLanguage } from "../../data/universities";
 import { useLanguage } from "@/app/context/LanguageContext";
 
 function StudySearchListInner() {
@@ -14,16 +14,25 @@ function StudySearchListInner() {
   const [programSearch, setProgramSearch] = useState(searchParams.get("university") || "");
   const [expandedUni, setExpandedUni] = useState(null);
 
+  const levelLabels = { associate: t.associateDegree, bachelor: t.bachelorsDegree, master: t.mastersDegree, doctorate: t.doctorate };
+  const langLabels = { english: t.langEnglish, turkish: t.langTurkish, arabic: t.langArabic, french: t.langFrench };
+
+  const programMatchesSearchAndLevel = (uni, p) => {
+    const searchMatch = !programSearch || p.toLowerCase().includes(programSearch.toLowerCase()) || uni.name.toLowerCase().includes(programSearch.toLowerCase());
+    const levelMatch = !selectedLevel || getProgramLevel(p) === selectedLevel;
+    const langMatch = !selectedLang || getInstructionLanguage(uni, p) === selectedLang;
+    return searchMatch && levelMatch && langMatch;
+  };
+
   const filtered = universities.filter(u => {
     const cityMatch = !selectedCity || u.city === selectedCity;
     const typeMatch = !selectedType || u.type === selectedType;
-    const progMatch = !programSearch || u.programs.some(p => p.toLowerCase().includes(programSearch.toLowerCase())) || u.name.toLowerCase().includes(programSearch.toLowerCase());
+    const progMatch = u.programs.some(p => programMatchesSearchAndLevel(u, p));
     return cityMatch && typeMatch && progMatch;
   });
 
   const getFilteredPrograms = (uni) => {
-    if (!programSearch) return uni.programs;
-    return uni.programs.filter(p => p.toLowerCase().includes(programSearch.toLowerCase()));
+    return uni.programs.filter(p => programMatchesSearchAndLevel(uni, p));
   };
 
   return (
@@ -117,9 +126,9 @@ function StudySearchListInner() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <div>
                 <h2 style={{ fontSize: 20, color: "var(--secondary)" }}>{t.searchResults}</h2>
-                {(programSearch || selectedCity || selectedType) && (
+                {(programSearch || selectedCity || selectedType || selectedLevel || selectedLang) && (
                   <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
-                    {programSearch && `${t.programUniLabel}: "${programSearch}"`} {selectedCity && `| ${t.cityLabel}: ${selectedCity}`} {selectedType && `| ${t.universityTypeLabel}: ${selectedType === "State" ? t.stateUni : t.foundationUni}`}
+                    {programSearch && `${t.programUniLabel}: "${programSearch}"`} {selectedCity && `| ${t.cityLabel}: ${selectedCity}`} {selectedType && `| ${t.universityTypeLabel}: ${selectedType === "State" ? t.stateUni : t.foundationUni}`} {selectedLevel && `| ${t.educationLevel}: ${levelLabels[selectedLevel]}`} {selectedLang && `| ${t.teachingLanguageLabel}: ${langLabels[selectedLang]}`}
                   </p>
                 )}
               </div>
@@ -128,12 +137,19 @@ function StudySearchListInner() {
               </span>
             </div>
 
+            {(selectedLevel && selectedLevel !== "bachelor") || (selectedLang && selectedLang !== "english" && selectedLang !== "turkish") ? (
+              <div style={{ background: "rgba(255,179,0,0.1)", border: "1px solid rgba(255,179,0,0.35)", color: "#8a5a00", borderRadius: 10, padding: "12px 18px", fontSize: 13.5, marginBottom: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+                {selectedLevel && selectedLevel !== "bachelor" && <span>ℹ️ {t.gradLevelDataNotice}</span>}
+                {selectedLang && selectedLang !== "english" && selectedLang !== "turkish" && <span>ℹ️ {t.langDataNotice}</span>}
+              </div>
+            ) : null}
+
             {filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 40px", background: "white", borderRadius: 16 }}>
                 <div style={{ fontSize: 54, marginBottom: 18 }}>🎓</div>
                 <h3 style={{ color: "var(--secondary)", marginBottom: 10 }}>{t.noResultsFoundTitle}</h3>
                 <p style={{ color: "var(--text-muted)" }}>{t.noResultsFoundMsg}</p>
-                <button className="btn-primary" style={{ marginTop: 20 }} onClick={() => { setSelectedCity(""); setSelectedType(""); setProgramSearch(""); }}>{t.clearAllFiltersBtn}</button>
+                <button className="btn-primary" style={{ marginTop: 20 }} onClick={() => { setSelectedCity(""); setSelectedType(""); setSelectedLevel(""); setSelectedLang(""); setProgramSearch(""); }}>{t.clearAllFiltersBtn}</button>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -199,10 +215,10 @@ function StudySearchListInner() {
                                 {programs.map((prog, i) => (
                                   <tr key={i} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "white" : "rgba(26,35,126,0.015)" }}>
                                     <td style={{ padding: "12px 14px", fontWeight: 500 }}>{prog}</td>
-                                    <td style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: 13 }}>{t.bachelorsDegree}</td>
+                                    <td style={{ padding: "12px 14px", color: "var(--text-muted)", fontSize: 13 }}>{levelLabels[getProgramLevel(prog)]}</td>
                                     <td style={{ padding: "12px 14px" }}>
                                       <span style={{ background: "rgba(0,120,60,0.1)", color: "#006633", padding: "2px 9px", borderRadius: 4, fontSize: 12, fontWeight: 600 }}>
-                                        {["Engineering","Computer","Electrical","Civil","Mechanical"].some(k => prog.includes(k)) ? t.langEnglish : `${t.langTurkish} / ${t.langEnglish}`}
+                                        {langLabels[getInstructionLanguage(uni, prog)]}
                                       </span>
                                     </td>
                                     <td style={{ padding: "12px 14px" }}>
