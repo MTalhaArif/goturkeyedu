@@ -20,6 +20,7 @@ export const adminDict = {
       cms: "Front CMS",
       alumni: "Alumni",
       reports: "Reports",
+      applications: "Applications",
       settings: "System Settings"
     },
     top: {
@@ -46,7 +47,8 @@ export const adminDict = {
       searchKeyword: "Search By Keyword",
       action: "Action",
       status: "Status",
-      date: "Date"
+      date: "Date",
+      close: "Close"
     },
     frontOffice: {
       title: "Admission Enquiry",
@@ -181,6 +183,34 @@ export const adminDict = {
       perSubAgencyBreakdown: "Students per Sub-Agency",
       noData: "No data yet."
     },
+    applications: {
+      title: "Student Applications",
+      cols: ["Name", "Email", "University", "Program", "Stage", "Action"],
+      reviewBtn: "Review",
+      noApplication: "Not started",
+      universityLabel: "University",
+      programLabel: "Program",
+      stageLabel: "Stage",
+      documentsLabel: "Documents",
+      diplomaLabel: "Diploma",
+      transcriptLabel: "Transcript",
+      otherLabel: "Other",
+      paymentScreenshotLabel: "Payment Screenshot",
+      verifyPaymentBtn: "Verify Payment",
+      markAcceptedBtn: "Mark Accepted",
+      makeOfferTitle: "Make an Offer",
+      offerNotesLabel: "Notes",
+      submitOfferBtn: "Send Offer",
+      stages: {
+        documents_pending: "Awaiting Documents",
+        payment_pending: "Payment Required",
+        payment_submitted: "Payment Submitted",
+        payment_verified: "Payment Verified",
+        under_review: "Under Review",
+        offer_made: "Offer Made",
+        accepted: "Accepted"
+      }
+    },
     fallback: {
       config: "configuration",
       msg: "This administrative module is active and awaiting backend parameters."
@@ -207,6 +237,7 @@ export const adminDict = {
       cms: "Ön CMS",
       alumni: "Mezunlar",
       reports: "Raporlar",
+      applications: "Başvurular",
       settings: "Sistem Ayarları"
     },
     top: {
@@ -233,7 +264,8 @@ export const adminDict = {
       searchKeyword: "Kelime İle Ara",
       action: "Aksiyon",
       status: "Durum",
-      date: "Tarih"
+      date: "Tarih",
+      close: "Kapat"
     },
     frontOffice: {
       title: "Kabul Sorgusu",
@@ -368,6 +400,34 @@ export const adminDict = {
       perSubAgencyBreakdown: "Alt Acenteye Göre Öğrenciler",
       noData: "Henüz veri yok."
     },
+    applications: {
+      title: "Öğrenci Başvuruları",
+      cols: ["Ad", "E-posta", "Üniversite", "Program", "Aşama", "Aksiyon"],
+      reviewBtn: "İncele",
+      noApplication: "Henüz başlamadı",
+      universityLabel: "Üniversite",
+      programLabel: "Program",
+      stageLabel: "Aşama",
+      documentsLabel: "Belgeler",
+      diplomaLabel: "Diploma",
+      transcriptLabel: "Transkript",
+      otherLabel: "Diğer",
+      paymentScreenshotLabel: "Ödeme Ekran Görüntüsü",
+      verifyPaymentBtn: "Ödemeyi Onayla",
+      markAcceptedBtn: "Kabul Edildi Olarak İşaretle",
+      makeOfferTitle: "Teklif Yap",
+      offerNotesLabel: "Notlar",
+      submitOfferBtn: "Teklifi Gönder",
+      stages: {
+        documents_pending: "Belgeler Bekleniyor",
+        payment_pending: "Ödeme Gerekli",
+        payment_submitted: "Ödeme Gönderildi",
+        payment_verified: "Ödeme Onaylandı",
+        under_review: "İnceleniyor",
+        offer_made: "Teklif Yapıldı",
+        accepted: "Kabul Edildi"
+      }
+    },
     fallback: {
       config: "yapılandırması",
       msg: "Bu yönetim modülü aktif olup arka plan parametrelerini bekliyor."
@@ -394,6 +454,7 @@ export const adminDict = {
       cms: "نظام إدارة المحتوى",
       alumni: "الخريجين",
       reports: "التقارير",
+      applications: "الطلبات",
       settings: "إعدادات النظام"
     },
     top: {
@@ -420,7 +481,8 @@ export const adminDict = {
       searchKeyword: "البحث عن طريق الكلمة الرئيسية",
       action: "إجراء",
       status: "الحالة",
-      date: "التاريخ"
+      date: "التاريخ",
+      close: "إغلاق"
     },
     frontOffice: {
       title: "استفسار القبول",
@@ -554,6 +616,34 @@ export const adminDict = {
       perAgencyBreakdown: "الطلاب حسب الوكالة",
       perSubAgencyBreakdown: "الطلاب حسب الوكالة الفرعية",
       noData: "لا توجد بيانات بعد."
+    },
+    applications: {
+      title: "طلبات الطلاب",
+      cols: ["الاسم", "البريد الإلكتروني", "الجامعة", "البرنامج", "المرحلة", "إجراء"],
+      reviewBtn: "مراجعة",
+      noApplication: "لم يبدأ بعد",
+      universityLabel: "الجامعة",
+      programLabel: "البرنامج",
+      stageLabel: "المرحلة",
+      documentsLabel: "المستندات",
+      diplomaLabel: "الشهادة",
+      transcriptLabel: "كشف الدرجات",
+      otherLabel: "أخرى",
+      paymentScreenshotLabel: "لقطة شاشة الدفع",
+      verifyPaymentBtn: "التحقق من الدفع",
+      markAcceptedBtn: "وضع علامة مقبول",
+      makeOfferTitle: "تقديم عرض",
+      offerNotesLabel: "ملاحظات",
+      submitOfferBtn: "إرسال العرض",
+      stages: {
+        documents_pending: "بانتظار المستندات",
+        payment_pending: "الدفع مطلوب",
+        payment_submitted: "تم إرسال الدفع",
+        payment_verified: "تم التحقق من الدفع",
+        under_review: "قيد المراجعة",
+        offer_made: "تم تقديم العرض",
+        accepted: "مقبول"
+      }
     },
     fallback: {
       config: "ترتيب",

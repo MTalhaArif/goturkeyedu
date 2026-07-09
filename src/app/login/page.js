@@ -41,7 +41,7 @@ export default function LoginPage() {
         ...profile,
       }));
 
-      router.push("/");
+      router.push("/dashboard");
     } catch (err) {
       const messages = {
         "auth/invalid-credential": "Invalid email or password. Please try again.",

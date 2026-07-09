@@ -121,6 +121,34 @@ export function subscribeToApplications(callback) {
   });
 }
 
+// ─── STUDENT DASHBOARD APPLICATIONS (applications/{uid}, one per student) ─────
+// Distinct from submitApplication/getApplicationsByStatus above (that scaffold
+// has no callers anywhere and a mismatched shape) — this is the real, uid-keyed
+// application doc the student dashboard and admin review screen both use.
+// Field contract: uid, universityName, programName, universityType ('State'|'Foundation'),
+// stage (see PortalDashboard.js applications tab / StudentDashboard.js for the enum),
+// documents: { diploma, transcript, other[] }, paymentScreenshot, offer, adminNotes.
+
+/** Get a student's application doc (null if they haven't started one yet) */
+export async function getApplication(uid) {
+  return getDocument(COLLECTIONS.APPLICATIONS, uid);
+}
+
+/** Create or update a student's application doc (uid-keyed, merges fields) */
+export async function upsertApplication(uid, data) {
+  return setDocument(COLLECTIONS.APPLICATIONS, uid, { ...data, uid });
+}
+
+/** Get every student application (Super Admin review list) */
+export async function getAllApplicationsForAdmin() {
+  return getCollection(COLLECTIONS.APPLICATIONS);
+}
+
+/** Advance/set a student's application stage, optionally merging other fields (e.g. an offer) */
+export async function updateApplicationStage(uid, stage, extra = {}) {
+  return updateDocument(COLLECTIONS.APPLICATIONS, uid, { ...extra, stage });
+}
+
 // ─── UNIVERSITIES ─────────────────────────────────────────────────────────────
 
 /** Get all universities */
@@ -151,6 +179,14 @@ export async function upsertUser(uid, data) {
 /** Get a user by UID */
 export async function getUserProfile(uid) {
   return getDocument(COLLECTIONS.USERS, uid);
+}
+
+/** Get every self-registered student account (Super Admin applications review list) */
+export async function getAllStudentUsers() {
+  const ref = collection(db, COLLECTIONS.USERS);
+  const q = query(ref, where('role', '==', 'student'));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 // ─── CONTACTS ─────────────────────────────────────────────────────────────────

@@ -72,9 +72,18 @@ service cloud.firestore {
       allow read, update, delete: if isSuperAdmin();
     }
 
-    match /applications/{id} {
-      allow create: if isSignedIn();
-      allow read, update, delete: if isSuperAdmin();
+    // Student dashboard applications, uid-keyed (one per self-registered student).
+    // Self can create their own doc and update most fields (documents, payment
+    // screenshot, accepting an offer); only Super Admin can transition a stage into
+    // payment_verified or offer_made (those require manual admin review).
+    match /applications/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow create: if isSignedIn() && request.auth.uid == uid && request.resource.data.uid == uid;
+      allow update: if isSuperAdmin() || (
+        isSignedIn() && request.auth.uid == uid &&
+        (request.resource.data.stage == resource.data.stage || !(request.resource.data.stage in ['payment_verified', 'offer_made']))
+      );
+      allow delete: if false;
     }
 
     match /documents/{id} {

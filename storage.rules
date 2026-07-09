@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// NOT auto-deployed — same treatment as firestore.rules: review and apply manually
+// in Firebase Console (Storage → Rules) for project goturkey-74ff4, or via
+// `firebase deploy --only storage`, before relying on this for real access control.
+//
+// Covers student dashboard document uploads (diploma, transcript, other, payment
+// screenshot) written by src/lib/storage.js to applications/{uid}/{fileName}.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /applications/{uid}/{fileName} {
+      // Read is left open: once a download URL is issued via getDownloadURL(), it
+      // carries its own access token and works regardless of this rule — nothing
+      // sensitive is exposed by the path itself, and the admin review screen relies
+      // on being able to open these URLs without needing admin-specific Storage access.
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('application/pdf|image/jpeg|image/png');
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

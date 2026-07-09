@@ -65,7 +65,7 @@ function RegisterPageInner() {
         educationLevel: form.educationLevel,
       }));
 
-      router.push("/");
+      router.push("/dashboard");
     } catch (err) {
       const messages = {
         "auth/email-already-in-use": "This email is already registered. Please sign in instead.",
