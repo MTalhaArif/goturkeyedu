@@ -9,9 +9,10 @@ import { universities } from "@/app/data/universities";
 const STATE_STEPS = ["documents_pending", "payment_pending", "payment_submitted", "payment_verified", "offer_made", "accepted"];
 const FOUNDATION_STEPS = ["documents_pending", "under_review", "offer_made", "accepted"];
 
-// The full document checklist a student can upload. `requiredFor` lists which target
-// education levels need this document as a prior-credential/identity requirement before
-// "Submit Documents" is enabled — everything else (language proficiency, other) is optional.
+// The full document checklist a student uploads once — shared across every application
+// they create, since a passport or high-school transcript doesn't change per university.
+// `requiredFor` lists which target education levels need this document before a fresh
+// application can skip straight past "documents_pending".
 const DOCUMENT_TYPES = [
   { key: "passport", labelKey: "sdDocPassport", requiredFor: ["associate", "bachelor", "master", "doctorate"] },
   { key: "picture", labelKey: "sdDocPicture", requiredFor: ["associate", "bachelor", "master", "doctorate"], isImage: true },
@@ -35,6 +36,16 @@ function findUniversityType(name) {
   return match ? match.type : null;
 }
 
+/** Whether the student's shared document set is missing anything required for their education level. */
+function computeMissingRequiredDocs(documents, educationLevel) {
+  const level = educationLevel || "bachelor";
+  return DOCUMENT_TYPES.some(d => d.requiredFor.includes(level) && !documents?.[d.key]);
+}
+
+function nextStageAfterDocuments(universityType) {
+  return universityType === "State" ? "payment_pending" : "under_review";
+}
+
 const card = { background: "white", borderRadius: 16, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.05)" };
 const label = { display: "block", fontWeight: 700, fontSize: 12, color: "var(--secondary)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.5px" };
 const value = { fontSize: 15, color: "var(--text-main)", marginBottom: 16 };
@@ -50,7 +61,7 @@ function StudentDashboardInner() {
   const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(null); // `${appId}:${kind}` currently uploading
+  const [uploading, setUploading] = useState(null); // document key or `payment:{appId}` currently uploading
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState(null);
 
@@ -62,11 +73,14 @@ function StudentDashboardInner() {
 
     (async () => {
       const p = await getUserProfile(u.uid);
+      if (p && !p.documents) p.documents = emptyDocuments();
       let apps = await getApplicationsByStudent(u.uid);
 
       // Arriving from an "Apply Now" click (StudySearch/List) while already logged in —
       // create a new application for this university/program (or reuse a matching one on
-      // repeat clicks) rather than overwriting whatever the student already had going.
+      // repeat clicks). The shared document set already covers this application, so its
+      // starting stage skips "documents_pending" if that set already satisfies the
+      // student's education level.
       const queryUniversity = searchParams.get("university");
       const queryProgram = searchParams.get("program");
       let landOnAppId = null;
@@ -79,12 +93,13 @@ function StudentDashboardInner() {
         if (existing) {
           landOnAppId = existing.id;
         } else {
+          const universityType = findUniversityType(queryUniversity);
+          const docsReady = !computeMissingRequiredDocs(p?.documents, p?.educationLevel);
           const initial = {
             universityName: queryUniversity,
             programName: queryProgram || null,
-            universityType: findUniversityType(queryUniversity),
-            stage: "documents_pending",
-            documents: emptyDocuments(),
+            universityType,
+            stage: docsReady ? nextStageAfterDocuments(universityType) : "documents_pending",
             paymentScreenshot: null,
             offer: null,
             adminNotes: "",
@@ -129,19 +144,15 @@ function StudentDashboardInner() {
     setApplications(prev => prev.map(a => a.id === appId ? { ...a, ...patch } : a));
   };
 
-  const handleUpload = async (appId, kind, file) => {
+  const handleDocUpload = async (docKey, file) => {
     if (!file) return;
     setError("");
-    const uploadKey = `${appId}:${kind}`;
-    setUploading(uploadKey);
+    setUploading(docKey);
     try {
-      const app = applications.find(a => a.id === appId);
-      const uploaded = await uploadApplicationFile(user.uid, appId, kind, file);
-      const patch = kind === "payment"
-        ? { paymentScreenshot: uploaded }
-        : { documents: { ...app.documents, [kind]: uploaded } };
-      await updateApplication(appId, patch);
-      patchApplication(appId, patch);
+      const uploaded = await uploadApplicationFile(user.uid, docKey, file);
+      const updatedDocuments = { ...profile.documents, [docKey]: uploaded };
+      await upsertUser(user.uid, { documents: updatedDocuments });
+      setProfile(prev => ({ ...prev, documents: updatedDocuments }));
     } catch (err) {
       setError(err.message || String(err));
     } finally {
@@ -149,15 +160,32 @@ function StudentDashboardInner() {
     }
   };
 
-  const requiredDocsMissing = (app) => {
-    const level = profile?.educationLevel || "bachelor";
-    return DOCUMENT_TYPES.some(d => d.requiredFor.includes(level) && !app.documents?.[d.key]);
+  const handlePaymentUpload = async (appId, file) => {
+    if (!file) return;
+    setError("");
+    const uploadKey = `payment:${appId}`;
+    setUploading(uploadKey);
+    try {
+      const uploaded = await uploadApplicationFile(user.uid, `payment-${appId}`, file);
+      await updateApplication(appId, { paymentScreenshot: uploaded });
+      patchApplication(appId, { paymentScreenshot: uploaded });
+    } catch (err) {
+      setError(err.message || String(err));
+    } finally {
+      setUploading(null);
+    }
   };
 
-  const submitDocuments = async (app) => {
-    const nextStage = app.universityType === "State" ? "payment_pending" : "under_review";
-    await updateApplicationStage(app.id, nextStage);
-    patchApplication(app.id, { stage: nextStage });
+  const requiredDocsMissing = computeMissingRequiredDocs(profile?.documents, profile?.educationLevel);
+
+  // Advances every application still waiting on the shared document set — a student
+  // normally only has one at "documents_pending" at a time, but nothing stops several.
+  const submitDocuments = async () => {
+    const pending = applications.filter(a => a.stage === "documents_pending");
+    await Promise.all(pending.map(a => {
+      const stage = nextStageAfterDocuments(a.universityType);
+      return updateApplicationStage(a.id, stage).then(() => patchApplication(a.id, { stage }));
+    }));
   };
 
   const submitPayment = async (app) => {
@@ -186,65 +214,64 @@ function StudentDashboardInner() {
     accepted: t.sdStageAccepted,
   };
 
+  const hasPendingDocs = applications.some(a => a.stage === "documents_pending");
+  const uploadedCount = DOCUMENT_TYPES.filter(d => profile.documents?.[d.key]).length;
+
+  const renderDocumentsSection = () => (
+    <div style={{ marginBottom: 28, paddingBottom: 28, borderBottom: "1px solid var(--border)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <h4 style={{ color: "var(--secondary)", fontSize: 15 }}>{t.sdTabDocuments}</h4>
+        <span style={{ color: "var(--text-muted)", fontSize: 13 }}>{uploadedCount} / {DOCUMENT_TYPES.length} {t.sdDocsUploadedLabel}</span>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14, marginBottom: 20 }}>
+        {DOCUMENT_TYPES.map(doc => {
+          const uploaded = profile.documents?.[doc.key];
+          return (
+            <div key={doc.key} style={{ border: `1.5px solid ${uploaded ? "#8fd9b6" : "var(--border)"}`, borderRadius: 12, padding: 12, background: uploaded ? "rgba(0,120,60,0.03)" : "#fafafa" }}>
+              <div style={{ height: 80, borderRadius: 8, background: uploaded && doc.isImage ? "none" : "rgba(0,0,0,0.03)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, overflow: "hidden" }}>
+                {uploaded && doc.isImage ? (
+                  <img src={uploaded.url} alt={t[doc.labelKey]} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: 28, opacity: uploaded ? 0.7 : 0.35 }}>📄</span>
+                )}
+              </div>
+              <div style={{ fontWeight: 700, fontSize: 12.5, color: "var(--secondary)", marginBottom: 6, lineHeight: 1.3 }}>{t[doc.labelKey]}</div>
+              {uploaded ? (
+                <a href={uploaded.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--primary)", fontWeight: 700 }}>↗ {t.sdViewFileLink}</a>
+              ) : (
+                <span style={{ fontSize: 12, color: "#94a3b8" }}>{t.sdNotUploadedLabel}</span>
+              )}
+              <label style={{ display: "block", fontSize: 11.5, color: "var(--secondary)", fontWeight: 700, cursor: "pointer", marginTop: 6 }}>
+                {uploading === doc.key ? "…" : (uploaded ? t.sdReuploadBtn : t.sdUploadBtn)}
+                <input type="file" accept="application/pdf,image/jpeg,image/png" style={{ display: "none" }} onChange={e => handleDocUpload(doc.key, e.target.files[0])} disabled={uploading === doc.key} />
+              </label>
+            </div>
+          );
+        })}
+      </div>
+
+      {hasPendingDocs ? (
+        <button
+          onClick={submitDocuments}
+          disabled={requiredDocsMissing}
+          className="btn-primary"
+          style={{ fontSize: 13.5, padding: "9px 22px", opacity: requiredDocsMissing ? 0.5 : 1 }}
+        >
+          {t.sdSubmitDocumentsBtn}
+        </button>
+      ) : (
+        <div style={{ color: "#006633", fontWeight: 600, fontSize: 13.5 }}>✅ {t.sdDocumentsSubmittedMsg}</div>
+      )}
+    </div>
+  );
+
   const renderApplicationDetail = (app) => {
     const steps = app.universityType === "State" ? STATE_STEPS : FOUNDATION_STEPS;
     const stepIndex = Math.max(0, steps.indexOf(app.stage));
-    const docsSubmitted = app.stage !== "documents_pending";
-    const uploadedCount = DOCUMENT_TYPES.filter(d => app.documents?.[d.key]).length;
 
     return (
       <div>
-        {/* Documents */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h4 style={{ color: "var(--secondary)", fontSize: 15 }}>{t.sdTabDocuments}</h4>
-          <span style={{ color: "var(--text-muted)", fontSize: 13 }}>{uploadedCount} / {DOCUMENT_TYPES.length} {t.sdDocsUploadedLabel}</span>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 14, marginBottom: 20 }}>
-          {DOCUMENT_TYPES.map(doc => {
-            const uploaded = app.documents?.[doc.key];
-            const uploadKey = `${app.id}:${doc.key}`;
-            return (
-              <div key={doc.key} style={{ border: `1.5px solid ${uploaded ? "#8fd9b6" : "var(--border)"}`, borderRadius: 12, padding: 12, background: uploaded ? "rgba(0,120,60,0.03)" : "#fafafa" }}>
-                <div style={{ height: 80, borderRadius: 8, background: uploaded && doc.isImage ? "none" : "rgba(0,0,0,0.03)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8, overflow: "hidden" }}>
-                  {uploaded && doc.isImage ? (
-                    <img src={uploaded.url} alt={t[doc.labelKey]} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <span style={{ fontSize: 28, opacity: uploaded ? 0.7 : 0.35 }}>📄</span>
-                  )}
-                </div>
-                <div style={{ fontWeight: 700, fontSize: 12.5, color: "var(--secondary)", marginBottom: 6, lineHeight: 1.3 }}>{t[doc.labelKey]}</div>
-                {uploaded ? (
-                  <a href={uploaded.url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--primary)", fontWeight: 700 }}>↗ {t.sdViewFileLink}</a>
-                ) : (
-                  <span style={{ fontSize: 12, color: "#94a3b8" }}>{t.sdNotUploadedLabel}</span>
-                )}
-                {!docsSubmitted && (
-                  <label style={{ display: "block", fontSize: 11.5, color: "var(--secondary)", fontWeight: 700, cursor: "pointer", marginTop: 6 }}>
-                    {uploading === uploadKey ? "…" : (uploaded ? t.sdReuploadBtn : t.sdUploadBtn)}
-                    <input type="file" accept="application/pdf,image/jpeg,image/png" style={{ display: "none" }} onChange={e => handleUpload(app.id, doc.key, e.target.files[0])} disabled={uploading === uploadKey} />
-                  </label>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {!docsSubmitted ? (
-          <button
-            onClick={() => submitDocuments(app)}
-            disabled={requiredDocsMissing(app)}
-            className="btn-primary"
-            style={{ fontSize: 13.5, padding: "9px 22px", opacity: requiredDocsMissing(app) ? 0.5 : 1, marginBottom: 24 }}
-          >
-            {t.sdSubmitDocumentsBtn}
-          </button>
-        ) : (
-          <div style={{ color: "#006633", fontWeight: 600, fontSize: 13.5, marginBottom: 24 }}>✅ {t.sdDocumentsSubmittedMsg}</div>
-        )}
-
-        {/* Status */}
-        <h4 style={{ color: "var(--secondary)", fontSize: 15, marginBottom: 20 }}>{t.sdTabStatus}</h4>
         <div style={{ display: "flex", marginBottom: 24 }}>
           {steps.map((s, i) => (
             <div key={s} style={{ flex: 1, textAlign: "center", position: "relative" }}>
@@ -268,8 +295,8 @@ function StudentDashboardInner() {
                 {app.paymentScreenshot ? `✅ ${app.paymentScreenshot.name}` : `⬜ ${t.sdNotUploadedLabel}`}
               </span>
               <label style={{ fontSize: 12.5, color: "var(--secondary)", fontWeight: 700, cursor: "pointer" }}>
-                {uploading === `${app.id}:payment` ? "…" : (app.paymentScreenshot ? t.sdReuploadBtn : t.sdUploadBtn)}
-                <input type="file" accept="image/jpeg,image/png,application/pdf" style={{ display: "none" }} onChange={e => handleUpload(app.id, "payment", e.target.files[0])} disabled={uploading === `${app.id}:payment`} />
+                {uploading === `payment:${app.id}` ? "…" : (app.paymentScreenshot ? t.sdReuploadBtn : t.sdUploadBtn)}
+                <input type="file" accept="image/jpeg,image/png,application/pdf" style={{ display: "none" }} onChange={e => handlePaymentUpload(app.id, e.target.files[0])} disabled={uploading === `payment:${app.id}`} />
               </label>
             </div>
             <button onClick={() => submitPayment(app)} disabled={!app.paymentScreenshot} className="btn-primary" style={{ fontSize: 13.5, padding: "9px 22px", opacity: !app.paymentScreenshot ? 0.5 : 1 }}>
@@ -397,7 +424,13 @@ function StudentDashboardInner() {
           <div style={card}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
               <h2 style={{ color: "var(--secondary)", fontSize: 20 }}>{t.sdTabApplications}</h2>
-              <a href="/StudySearch/List" className="btn-primary" style={{ fontSize: 13, padding: "8px 18px", textDecoration: "none" }}>{t.sdApplyAnotherBtn}</a>
+              {applications.length > 0 && (
+                requiredDocsMissing ? (
+                  <span style={{ fontSize: 12.5, color: "var(--text-muted)" }}>{t.sdCompleteDocumentsFirstMsg}</span>
+                ) : (
+                  <a href="/StudySearch/List" className="btn-primary" style={{ fontSize: 13, padding: "8px 18px", textDecoration: "none" }}>{t.sdApplyAnotherBtn}</a>
+                )
+              )}
             </div>
 
             {applications.length === 0 ? (
@@ -405,35 +438,38 @@ function StudentDashboardInner() {
                 {t.sdNoApplicationsMsg} <a href="/StudySearch/List" style={{ color: "var(--primary)", fontWeight: 700 }}>{t.sdFindUniversityBtn}</a>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {applications.map(app => {
-                  const isExpanded = expandedAppId === app.id;
-                  return (
-                    <div key={app.id} style={{ border: `1.5px solid ${isExpanded ? "var(--primary)" : "var(--border)"}`, borderRadius: 12, overflow: "hidden" }}>
-                      <div
-                        onClick={() => setExpandedAppId(isExpanded ? null : app.id)}
-                        style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", background: isExpanded ? "rgba(26,35,126,0.03)" : "white", flexWrap: "wrap", gap: 10 }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: 700, color: "var(--secondary)", fontSize: 15 }}>{app.universityName}</div>
-                          {app.programName && <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{app.programName}</div>}
+              <>
+                {renderDocumentsSection()}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {applications.map(app => {
+                    const isExpanded = expandedAppId === app.id;
+                    return (
+                      <div key={app.id} style={{ border: `1.5px solid ${isExpanded ? "var(--primary)" : "var(--border)"}`, borderRadius: 12, overflow: "hidden" }}>
+                        <div
+                          onClick={() => setExpandedAppId(isExpanded ? null : app.id)}
+                          style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", background: isExpanded ? "rgba(26,35,126,0.03)" : "white", flexWrap: "wrap", gap: 10 }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 700, color: "var(--secondary)", fontSize: 15 }}>{app.universityName}</div>
+                            {app.programName && <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{app.programName}</div>}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 20, background: app.stage === "accepted" ? "rgba(0,120,60,0.1)" : "rgba(255,179,0,0.15)", color: app.stage === "accepted" ? "#006633" : "#8a5a00" }}>
+                              {stageLabels[app.stage]}
+                            </span>
+                            <span style={{ color: "var(--text-muted)", fontSize: 16, transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
+                          </div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, padding: "4px 12px", borderRadius: 20, background: app.stage === "accepted" ? "rgba(0,120,60,0.1)" : "rgba(255,179,0,0.15)", color: app.stage === "accepted" ? "#006633" : "#8a5a00" }}>
-                            {stageLabels[app.stage]}
-                          </span>
-                          <span style={{ color: "var(--text-muted)", fontSize: 16, transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
-                        </div>
+                        {isExpanded && (
+                          <div style={{ padding: 20, borderTop: "1px solid var(--border)" }}>
+                            {renderApplicationDetail(app)}
+                          </div>
+                        )}
                       </div>
-                      {isExpanded && (
-                        <div style={{ padding: 20, borderTop: "1px solid var(--border)" }}>
-                          {renderApplicationDetail(app)}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         )}

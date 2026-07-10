@@ -103,6 +103,9 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
         ...a,
         studentName: userByUid[a.studentUid]?.name || "—",
         studentEmail: userByUid[a.studentUid]?.email || "—",
+        // Documents are shared across all of a student's applications (uploaded once,
+        // not per-application) — join them in from the owning student's profile.
+        documents: userByUid[a.studentUid]?.documents || {},
       })));
     } else if (role === "agency") {
       const [subs, studs] = await Promise.all([getSubAgenciesByParent(u.uid), getStudentsByAgency(u.uid)]);
