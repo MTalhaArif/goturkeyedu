@@ -5,11 +5,12 @@ rules_version = '2';
 // `firebase deploy --only storage`, before relying on this for real access control.
 //
 // Covers student dashboard document uploads (diploma, transcript, other, payment
-// screenshot) written by src/lib/storage.js to applications/{uid}/{fileName}.
+// screenshot) written by src/lib/storage.js to applications/{uid}/{appId}/{fileName}
+// — one subfolder per application, since a student can now have several.
 
 service firebase.storage {
   match /b/{bucket}/o {
-    match /applications/{uid}/{fileName} {
+    match /applications/{uid}/{appId}/{fileName} {
       // Read is left open: once a download URL is issued via getDownloadURL(), it
       // carries its own access token and works regardless of this rule — nothing
       // sensitive is exposed by the path itself, and the admin review screen relies

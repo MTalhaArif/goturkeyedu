@@ -121,22 +121,28 @@ export function subscribeToApplications(callback) {
   });
 }
 
-// ─── STUDENT DASHBOARD APPLICATIONS (applications/{uid}, one per student) ─────
+// ─── STUDENT DASHBOARD APPLICATIONS (applications/{autoId}, many per student) ──
 // Distinct from submitApplication/getApplicationsByStatus above (that scaffold
-// has no callers anywhere and a mismatched shape) — this is the real, uid-keyed
-// application doc the student dashboard and admin review screen both use.
-// Field contract: uid, universityName, programName, universityType ('State'|'Foundation'),
+// has no callers anywhere and a mismatched shape) — this is the real application
+// model the student dashboard and admin review screen both use. A student can
+// have any number of applications (one per university/program they apply to),
+// each doc owned via its `studentUid` field rather than the doc ID.
+// Field contract: studentUid, universityName, programName, universityType ('State'|'Foundation'),
 // stage (see PortalDashboard.js applications tab / StudentDashboard.js for the enum),
-// documents: { diploma, transcript, other[] }, paymentScreenshot, offer, adminNotes.
+// documents: { passport, picture, highSchool1, highSchool2, bachelorDegree, bachelorTranscript,
+// masterDegree, masterTranscript, languageProficiency, other }, paymentScreenshot, offer, adminNotes.
 
-/** Get a student's application doc (null if they haven't started one yet) */
-export async function getApplication(uid) {
-  return getDocument(COLLECTIONS.APPLICATIONS, uid);
+/** Create a new application for a student (auto-ID — a student may have several) */
+export async function createApplication(studentUid, data) {
+  return addDocument(COLLECTIONS.APPLICATIONS, { ...data, studentUid });
 }
 
-/** Create or update a student's application doc (uid-keyed, merges fields) */
-export async function upsertApplication(uid, data) {
-  return setDocument(COLLECTIONS.APPLICATIONS, uid, { ...data, uid });
+/** Get every application a student has started */
+export async function getApplicationsByStudent(studentUid) {
+  const ref = collection(db, COLLECTIONS.APPLICATIONS);
+  const q = query(ref, where('studentUid', '==', studentUid));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
 /** Get every student application (Super Admin review list) */
@@ -144,9 +150,14 @@ export async function getAllApplicationsForAdmin() {
   return getCollection(COLLECTIONS.APPLICATIONS);
 }
 
-/** Advance/set a student's application stage, optionally merging other fields (e.g. an offer) */
-export async function updateApplicationStage(uid, stage, extra = {}) {
-  return updateDocument(COLLECTIONS.APPLICATIONS, uid, { ...extra, stage });
+/** Advance/set an application's stage, optionally merging other fields (e.g. an offer) */
+export async function updateApplicationStage(id, stage, extra = {}) {
+  return updateDocument(COLLECTIONS.APPLICATIONS, id, { ...extra, stage });
+}
+
+/** Patch arbitrary fields on an application (document uploads, payment screenshot, etc.) */
+export async function updateApplication(id, data) {
+  return updateDocument(COLLECTIONS.APPLICATIONS, id, data);
 }
 
 // ─── UNIVERSITIES ─────────────────────────────────────────────────────────────

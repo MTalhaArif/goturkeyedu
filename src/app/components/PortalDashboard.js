@@ -83,7 +83,7 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
   const [students, setStudents] = useState([]);
   const [newStudent, setNewStudent] = useState({ name: "", admNo: "", class: "", section: "", email: "", phone: "", nationality: "" });
   const [createModal, setCreateModal] = useState(null); // "agency" | "subagency" | null
-  const [studentApps, setStudentApps] = useState([]); // self-registered students + their application doc (super_admin only)
+  const [appRows, setAppRows] = useState([]); // one row per application, joined with its owning student (super_admin only)
   const [reviewModal, setReviewModal] = useState(null);
 
   useEffect(() => {
@@ -98,8 +98,12 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
     if (role === "super_admin") {
       const [ag, subs, studs, studentUsers, apps] = await Promise.all([getAgencies(), getAllSubAgencies(), getAllStudents(), getAllStudentUsers(), getAllApplicationsForAdmin()]);
       setAgencies(ag); setSubAgencies(subs); setStudents(studs);
-      const appsByUid = Object.fromEntries(apps.map(a => [a.id, a]));
-      setStudentApps(studentUsers.map(su => ({ ...su, application: appsByUid[su.id] || null })));
+      const userByUid = Object.fromEntries(studentUsers.map(su => [su.id, su]));
+      setAppRows(apps.map(a => ({
+        ...a,
+        studentName: userByUid[a.studentUid]?.name || "—",
+        studentEmail: userByUid[a.studentUid]?.email || "—",
+      })));
     } else if (role === "agency") {
       const [subs, studs] = await Promise.all([getSubAgenciesByParent(u.uid), getStudentsByAgency(u.uid)]);
       setSubAgencies(subs); setStudents(studs);
@@ -798,14 +802,13 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
   );
 
   // -- STUDENT APPLICATIONS REVIEW (Super Admin only) --
-  const setApplicationStage = async (uid, stage, extra = {}) => {
-    await updateApplicationStage(uid, stage, extra);
+  const setApplicationStage = async (appId, stage, extra = {}) => {
+    await updateApplicationStage(appId, stage, extra);
     await refreshTenantData(user);
     setReviewModal(null);
   };
 
-  const ReviewApplicationModal = ({ student, onClose }) => {
-    const app = student.application;
+  const ReviewApplicationModal = ({ app, onClose }) => {
     const [offerForm, setOfferForm] = useState({ universityName: app?.universityName || "", programName: app?.programName || "", notes: "" });
     const [busy, setBusy] = useState(false);
 
@@ -817,57 +820,49 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
 
     const handleMakeOffer = (e) => {
       e.preventDefault();
-      run(() => setApplicationStage(student.id, "offer_made", { offer: { ...offerForm, madeAt: new Date().toISOString() } }));
+      run(() => setApplicationStage(app.id, "offer_made", { offer: { ...offerForm, madeAt: new Date().toISOString() } }));
     };
 
     return (
       <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", overflowY: "auto", padding: "40px 16px" }}>
         <div style={{ background: "white", borderRadius: 16, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto" }}>
-          <h3 style={{ marginBottom: 4, color: "#0f172a" }}>{student.name}</h3>
-          <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>{student.email}</p>
+          <h3 style={{ marginBottom: 4, color: "#0f172a" }}>{app.studentName}</h3>
+          <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>{app.studentEmail}</p>
 
-          {!app ? (
-            <p style={{ color: "#64748b" }}>{t.applications.noApplication}</p>
-          ) : (
-            <>
-              <p style={{ fontSize: 14, marginBottom: 6 }}><strong>{t.applications.universityLabel}:</strong> {app.universityName || "—"} {app.universityType ? `(${app.universityType})` : ""}</p>
-              <p style={{ fontSize: 14, marginBottom: 6 }}><strong>{t.applications.programLabel}:</strong> {app.programName || "—"}</p>
-              <p style={{ fontSize: 14, marginBottom: 16 }}><strong>{t.applications.stageLabel}:</strong> {t.applications.stages[app.stage] || app.stage}</p>
+          <p style={{ fontSize: 14, marginBottom: 6 }}><strong>{t.applications.universityLabel}:</strong> {app.universityName || "—"} {app.universityType ? `(${app.universityType})` : ""}</p>
+          <p style={{ fontSize: 14, marginBottom: 6 }}><strong>{t.applications.programLabel}:</strong> {app.programName || "—"}</p>
+          <p style={{ fontSize: 14, marginBottom: 16 }}><strong>{t.applications.stageLabel}:</strong> {t.applications.stages[app.stage] || app.stage}</p>
 
-              <div style={{ marginBottom: 16 }}>
-                <strong style={{ fontSize: 13 }}>{t.applications.documentsLabel}</strong>
-                <ul style={{ marginTop: 8, paddingLeft: 18, fontSize: 13, lineHeight: 1.9 }}>
-                  <li>{t.applications.diplomaLabel}: {app.documents?.diploma ? <a href={app.documents.diploma.url} target="_blank" rel="noreferrer">{app.documents.diploma.name}</a> : "—"}</li>
-                  <li>{t.applications.transcriptLabel}: {app.documents?.transcript ? <a href={app.documents.transcript.url} target="_blank" rel="noreferrer">{app.documents.transcript.name}</a> : "—"}</li>
-                  {(app.documents?.other || []).map((f, i) => (
-                    <li key={i}>{t.applications.otherLabel}: <a href={f.url} target="_blank" rel="noreferrer">{f.name}</a></li>
-                  ))}
-                </ul>
-              </div>
+          <div style={{ marginBottom: 16 }}>
+            <strong style={{ fontSize: 13 }}>{t.applications.documentsLabel}</strong>
+            <ul style={{ marginTop: 8, paddingLeft: 18, fontSize: 13, lineHeight: 1.9 }}>
+              {Object.entries(app.documents || {}).map(([key, f]) => (
+                f ? <li key={key}>{key}: <a href={f.url} target="_blank" rel="noreferrer">{f.name}</a></li> : null
+              ))}
+            </ul>
+          </div>
 
-              {app.paymentScreenshot && (
-                <p style={{ fontSize: 13, marginBottom: 16 }}><strong>{t.applications.paymentScreenshotLabel}:</strong> <a href={app.paymentScreenshot.url} target="_blank" rel="noreferrer">{app.paymentScreenshot.name}</a></p>
-              )}
+          {app.paymentScreenshot && (
+            <p style={{ fontSize: 13, marginBottom: 16 }}><strong>{t.applications.paymentScreenshotLabel}:</strong> <a href={app.paymentScreenshot.url} target="_blank" rel="noreferrer">{app.paymentScreenshot.name}</a></p>
+          )}
 
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
-                {app.stage === "payment_submitted" && (
-                  <button disabled={busy} onClick={() => run(() => setApplicationStage(student.id, "payment_verified"))} className="btn-primary" style={{ fontSize: 13, padding: "8px 16px" }}>{t.applications.verifyPaymentBtn}</button>
-                )}
-                {app.stage === "offer_made" && (
-                  <button disabled={busy} onClick={() => run(() => setApplicationStage(student.id, "accepted"))} className="btn-primary" style={{ fontSize: 13, padding: "8px 16px" }}>{t.applications.markAcceptedBtn}</button>
-                )}
-              </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
+            {app.stage === "payment_submitted" && (
+              <button disabled={busy} onClick={() => run(() => setApplicationStage(app.id, "payment_verified"))} className="btn-primary" style={{ fontSize: 13, padding: "8px 16px" }}>{t.applications.verifyPaymentBtn}</button>
+            )}
+            {app.stage === "offer_made" && (
+              <button disabled={busy} onClick={() => run(() => setApplicationStage(app.id, "accepted"))} className="btn-primary" style={{ fontSize: 13, padding: "8px 16px" }}>{t.applications.markAcceptedBtn}</button>
+            )}
+          </div>
 
-              {["payment_verified", "under_review"].includes(app.stage) && (
-                <form onSubmit={handleMakeOffer} style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
-                  <h4 style={{ fontSize: 14, marginBottom: 10, color: "#0f172a" }}>{t.applications.makeOfferTitle}</h4>
-                  <input required placeholder={t.applications.universityLabel} value={offerForm.universityName} onChange={e => setOfferForm({ ...offerForm, universityName: e.target.value })} style={{ width: "100%", padding: 10, marginBottom: 8, border: "1px solid #e2e8f0", borderRadius: 7 }} />
-                  <input required placeholder={t.applications.programLabel} value={offerForm.programName} onChange={e => setOfferForm({ ...offerForm, programName: e.target.value })} style={{ width: "100%", padding: 10, marginBottom: 8, border: "1px solid #e2e8f0", borderRadius: 7 }} />
-                  <textarea placeholder={t.applications.offerNotesLabel} value={offerForm.notes} onChange={e => setOfferForm({ ...offerForm, notes: e.target.value })} style={{ width: "100%", padding: 10, marginBottom: 12, border: "1px solid #e2e8f0", borderRadius: 7, minHeight: 70 }} />
-                  <button type="submit" disabled={busy} className="btn-primary" style={{ fontSize: 13, padding: "8px 16px" }}>{t.applications.submitOfferBtn}</button>
-                </form>
-              )}
-            </>
+          {["payment_verified", "under_review"].includes(app.stage) && (
+            <form onSubmit={handleMakeOffer} style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+              <h4 style={{ fontSize: 14, marginBottom: 10, color: "#0f172a" }}>{t.applications.makeOfferTitle}</h4>
+              <input required placeholder={t.applications.universityLabel} value={offerForm.universityName} onChange={e => setOfferForm({ ...offerForm, universityName: e.target.value })} style={{ width: "100%", padding: 10, marginBottom: 8, border: "1px solid #e2e8f0", borderRadius: 7 }} />
+              <input required placeholder={t.applications.programLabel} value={offerForm.programName} onChange={e => setOfferForm({ ...offerForm, programName: e.target.value })} style={{ width: "100%", padding: 10, marginBottom: 8, border: "1px solid #e2e8f0", borderRadius: 7 }} />
+              <textarea placeholder={t.applications.offerNotesLabel} value={offerForm.notes} onChange={e => setOfferForm({ ...offerForm, notes: e.target.value })} style={{ width: "100%", padding: 10, marginBottom: 12, border: "1px solid #e2e8f0", borderRadius: 7, minHeight: 70 }} />
+              <button type="submit" disabled={busy} className="btn-primary" style={{ fontSize: 13, padding: "8px 16px" }}>{t.applications.submitOfferBtn}</button>
+            </form>
           )}
 
           <button onClick={onClose} style={{ marginTop: 20, background: "none", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 16px", cursor: "pointer" }}>{t.common.close}</button>
@@ -879,25 +874,31 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
   const renderApplications = () => (
     <>
       <HeaderControls title={t.applications.title} />
-      <DataTable
-        columns={t.applications.cols}
-        data={studentApps}
-        renderRow={s => (
-          <>
-            <td style={{ padding: "12px 8px", fontWeight: 600 }}>{s.name}</td>
-            <td>{s.email}</td>
-            <td>{s.application?.universityName || "—"}</td>
-            <td>{s.application?.programName || "—"}</td>
-            <td>{s.application ? (t.applications.stages[s.application.stage] || s.application.stage) : t.applications.noApplication}</td>
-            <td>
-              <button onClick={() => setReviewModal(s)} style={{ background: "rgba(26,35,126,0.08)", color: "#1a237e", border: "none", padding: "4px 12px", borderRadius: 4, cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-                {t.applications.reviewBtn}
-              </button>
-            </td>
-          </>
-        )}
-      />
-      {reviewModal && <ReviewApplicationModal student={reviewModal} onClose={() => setReviewModal(null)} />}
+      {appRows.length === 0 ? (
+        <div style={{ background: "white", borderRadius: 16, padding: 32, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9", color: "#64748b" }}>
+          {t.applications.noApplication}
+        </div>
+      ) : (
+        <DataTable
+          columns={t.applications.cols}
+          data={appRows}
+          renderRow={a => (
+            <>
+              <td style={{ padding: "12px 8px", fontWeight: 600 }}>{a.studentName}</td>
+              <td>{a.studentEmail}</td>
+              <td>{a.universityName || "—"}</td>
+              <td>{a.programName || "—"}</td>
+              <td>{t.applications.stages[a.stage] || a.stage}</td>
+              <td>
+                <button onClick={() => setReviewModal(a)} style={{ background: "rgba(26,35,126,0.08)", color: "#1a237e", border: "none", padding: "4px 12px", borderRadius: 4, cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
+                  {t.applications.reviewBtn}
+                </button>
+              </td>
+            </>
+          )}
+        />
+      )}
+      {reviewModal && <ReviewApplicationModal app={reviewModal} onClose={() => setReviewModal(null)} />}
     </>
   );
 
