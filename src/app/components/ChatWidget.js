@@ -102,17 +102,28 @@ export default function ChatWidget() {
         </div>
       )}
 
-      <button
-        onClick={() => setOpen(o => !o)}
-        aria-label={t.chatbotOpenLabel}
-        style={{
-          width: 58, height: 58, borderRadius: "50%", border: "none", cursor: "pointer",
-          background: "var(--primary)", color: "white", fontSize: 26, boxShadow: "0 6px 20px rgba(224,60,49,0.4)",
-          display: "flex", alignItems: "center", justifyContent: "center", marginLeft: isRtl ? 0 : "auto", marginRight: isRtl ? "auto" : 0,
-        }}
-      >
-        {open ? "×" : "💬"}
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: isRtl ? 0 : "auto", marginRight: isRtl ? "auto" : 0 }}>
+        {!open && (
+          <div style={{
+            background: "white", color: "var(--secondary)", fontWeight: 700, fontSize: 13.5,
+            padding: "10px 16px", borderRadius: 20, boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
+            border: "1px solid var(--border)", whiteSpace: "nowrap", animation: "dropIn 0.3s",
+          }}>
+            {t.chatbotHelpBubble}
+          </div>
+        )}
+        <button
+          onClick={() => setOpen(o => !o)}
+          aria-label={t.chatbotOpenLabel}
+          style={{
+            width: 58, height: 58, borderRadius: "50%", border: "none", cursor: "pointer",
+            background: "var(--primary)", color: "white", fontSize: 26, boxShadow: "0 6px 20px rgba(224,60,49,0.4)",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}
+        >
+          {open ? "×" : "🎓"}
+        </button>
+      </div>
     </div>
   );
 }
