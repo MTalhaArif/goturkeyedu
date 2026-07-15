@@ -60,7 +60,7 @@ export default function ChatWidget() {
   }
 
   return (
-    <div style={{ position: "fixed", bottom: 24, [isRtl ? "left" : "right"]: 24, zIndex: 1000 }} dir={isRtl ? "rtl" : "ltr"}>
+    <div style={{ position: "fixed", bottom: 24, [isRtl ? "left" : "right"]: 24, zIndex: 1000, display: "flex", flexDirection: "column", alignItems: isRtl ? "flex-start" : "flex-end" }} dir={isRtl ? "rtl" : "ltr"}>
       {open && (
         <div style={{ width: 340, maxWidth: "calc(100vw - 48px)", height: 460, maxHeight: "calc(100vh - 140px)", background: "white", borderRadius: 16, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", overflow: "hidden", marginBottom: 12 }}>
           <div style={{ background: "var(--secondary)", color: "white", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -102,7 +102,7 @@ export default function ChatWidget() {
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: isRtl ? 0 : "auto", marginRight: isRtl ? "auto" : 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {!open && (
           <div style={{
             background: "white", color: "var(--secondary)", fontWeight: 700, fontSize: 13.5,
