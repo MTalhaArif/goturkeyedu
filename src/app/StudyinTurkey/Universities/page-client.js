@@ -9,7 +9,7 @@ import { getUniversitySlug } from "@/lib/universitySlug";
 function UniversitiesPageInner() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
-  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedCity, setSelectedCity] = useState(searchParams.get("city") || "");
   const [selectedType, setSelectedType] = useState("");
   const [searchText, setSearchText] = useState(searchParams.get("university") || "");
 

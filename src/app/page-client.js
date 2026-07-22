@@ -10,7 +10,7 @@ const regionData = {
   },
   AEGEAN: {
     desc: "The Aegean Region is named after the Aegean Sea. It borders Marmara to the north, Central Anatolia to the east, the Mediterranean to the south and the Aegean Sea to the west. Known for its olive groves, vineyards, and ancient ruins, it hosts Turkey's third-largest city, İzmir.",
-    cities: ["İzmir", "Muğla", "Denizli", "Aydın", "Afyon", "Kütahya", "Uşak", "Manisa"],
+    cities: ["İzmir", "Muğla", "Denizli", "Aydın", "Afyonkarahisar", "Kütahya", "Uşak", "Manisa"],
     unis: 25
   },
   "BLACK SEA": {
@@ -295,7 +295,7 @@ export default function Home() {
               </p>
               <div className="region-cities">
                 {regionData[activeRegion].cities.map(city => (
-                  <a key={city} href={`/discover/cities/${city.toLowerCase()}`} className="city-badge">{city}</a>
+                  <a key={city} href={`/StudyinTurkey/Universities?city=${encodeURIComponent(city)}`} className="city-badge">{city}</a>
                 ))}
               </div>
               <a href="/discover/cities" className="btn-primary" style={{ marginTop: 25, display: "inline-block" }}>
@@ -305,6 +305,21 @@ export default function Home() {
             <div className="region-map-placeholder">
               <div className="region-map-img" style={{ backgroundImage: "url('/explore.webp')", backgroundSize: "cover", backgroundPosition: "center", width: "100%", height: "300px", borderRadius: 12, opacity: 0.85 }}></div>
             </div>
+          </div>
+
+          <div style={{ marginTop: 30, display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {[
+              ["Türkiye at a Glance", "/discover/turkiye-at-a-glance"],
+              ["Culture", "/discover/culture"],
+              ["Climate", "/discover/climate"],
+              ["Food Culture", "/discover/food-culture"],
+              ["Transportation", "/discover/transportation"],
+              ["Tips for Students", "/discover/tips-for-students"],
+              ["Learning Turkish", "/discover/learning-turkish"],
+              ["Turkish Higher Education System", "/why-turkiye/higher-education-system"],
+            ].map(([label, href]) => (
+              <a key={href} href={href} className="city-badge">{label}</a>
+            ))}
           </div>
         </div>
       </section>
