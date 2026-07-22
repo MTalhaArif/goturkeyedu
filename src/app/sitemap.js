@@ -1,4 +1,5 @@
 import { SITE_URL } from "@/lib/siteConfig";
+import { getAllUniversitySlugs } from "@/lib/universitySlug";
 
 const staticRoutes = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
@@ -30,10 +31,20 @@ const staticRoutes = [
 
 export default function sitemap() {
   const lastModified = new Date();
-  return staticRoutes.map(({ path, changeFrequency, priority }) => ({
+
+  const staticEntries = staticRoutes.map(({ path, changeFrequency, priority }) => ({
     url: `${SITE_URL}${path}`,
     lastModified,
     changeFrequency,
     priority,
   }));
+
+  const universityEntries = getAllUniversitySlugs().map((slug) => ({
+    url: `${SITE_URL}/universities/${slug}`,
+    lastModified,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...universityEntries];
 }

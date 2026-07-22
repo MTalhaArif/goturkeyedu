@@ -3,6 +3,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { universities, uniqueCities, getAllPrograms } from "../../data/universities";
 import { useLanguage } from "@/app/context/LanguageContext";
+import { getUniversitySlug } from "@/lib/universitySlug";
 
 
 function UniversitiesPageInner() {
@@ -117,7 +118,9 @@ function UniversitiesPageInner() {
                     {/* Header */}
                     <div style={{ background: "var(--secondary)", padding: "20px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                       <div>
-                        <h3 style={{ color: "white", fontSize: 19, marginBottom: 4 }}>{uni.name}</h3>
+                        <h3 style={{ color: "white", fontSize: 19, marginBottom: 4 }}>
+                          <a href={`/universities/${getUniversitySlug(uni)}`} style={{ color: "white" }}>{uni.name}</a>
+                        </h3>
                         <div style={{ display: "flex", gap: 18, fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
                           <span>📍 {uni.city}</span>
                           <span>🏢 {uni.type === "State" ? t.stateUni : t.foundationUni}</span>
@@ -150,7 +153,10 @@ function UniversitiesPageInner() {
                         )}
                       </div>
                       <div style={{ display: "flex", gap: 12 }}>
-                        <a href={`/StudySearch/List?university=${encodeURIComponent(uni.name)}`} className="btn-primary" style={{ fontSize: 13, padding: "8px 20px" }}>
+                        <a href={`/universities/${getUniversitySlug(uni)}`} className="btn-primary" style={{ fontSize: 13, padding: "8px 20px" }}>
+                          View Profile
+                        </a>
+                        <a href={`/StudySearch/List?university=${encodeURIComponent(uni.name)}`} style={{ fontSize: 13, padding: "8px 20px", border: "2px solid var(--secondary)", color: "var(--secondary)", borderRadius: 8, fontWeight: 600, display: "inline-block" }}>
                           {t.universityList}
                         </a>
                         <a href={`https://${uni.website}`} target="_blank" rel="noreferrer" style={{ fontSize: 13, padding: "8px 20px", border: "2px solid var(--secondary)", color: "var(--secondary)", borderRadius: 8, fontWeight: 600, display: "inline-block", transition: "all 0.2s" }}>
