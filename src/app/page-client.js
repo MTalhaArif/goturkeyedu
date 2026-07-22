@@ -41,11 +41,11 @@ const regionData = {
 };
 
 const heroSlides = [
-  { titleKey: "heroTitle1", subKey: "heroSub1", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(200,0,0,0.3) 100%), url('/hero.png')" },
-  { titleKey: "heroTitle2", subKey: "heroSub2", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(26,35,126,0.4) 100%), url('/hero.png')" },
-  { titleKey: "heroTitle3", subKey: "heroSub3", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(0,120,60,0.4) 100%), url('/explore.png')" },
-  { titleKey: "heroTitle4", subKey: "heroSub4", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(150,50,0,0.4) 100%), url('/explore.png')" },
-  { titleKey: "heroTitle5", subKey: "heroSub5", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(26,35,126,0.4) 100%), url('/hero.png')" },
+  { titleKey: "heroTitle1", subKey: "heroSub1", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(200,0,0,0.3) 100%), url('/hero.webp')" },
+  { titleKey: "heroTitle2", subKey: "heroSub2", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(26,35,126,0.4) 100%), url('/hero.webp')" },
+  { titleKey: "heroTitle3", subKey: "heroSub3", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(0,120,60,0.4) 100%), url('/explore.webp')" },
+  { titleKey: "heroTitle4", subKey: "heroSub4", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(150,50,0,0.4) 100%), url('/explore.webp')" },
+  { titleKey: "heroTitle5", subKey: "heroSub5", bg: "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(26,35,126,0.4) 100%), url('/hero.webp')" },
 ];
 
 const qaVideos = [
@@ -303,7 +303,7 @@ export default function Home() {
               </a>
             </div>
             <div className="region-map-placeholder">
-              <div className="region-map-img" style={{ backgroundImage: "url('/explore.png')", backgroundSize: "cover", backgroundPosition: "center", width: "100%", height: "300px", borderRadius: 12, opacity: 0.85 }}></div>
+              <div className="region-map-img" style={{ backgroundImage: "url('/explore.webp')", backgroundSize: "cover", backgroundPosition: "center", width: "100%", height: "300px", borderRadius: 12, opacity: 0.85 }}></div>
             </div>
           </div>
         </div>

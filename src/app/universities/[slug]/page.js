@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAllPrograms, getInstructionLanguage } from "@/app/data/universities";
 import { getUniversityBySlug, getAllUniversitySlugs } from "@/lib/universitySlug";
+import { jsonLdScriptProps } from "@/lib/jsonLd";
 
 export function generateStaticParams() {
   return getAllUniversitySlugs().map((slug) => ({ slug }));
@@ -60,8 +61,22 @@ export default async function UniversityDetailPage({ params }) {
   const typeLabel = uni.type === "State" ? "Public University" : "Private University";
   const totalPrograms = getAllPrograms(uni).length;
 
+  const universityJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    name: uni.name,
+    url: `https://${uni.website}`,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: uni.address,
+      addressLocality: uni.city,
+      addressCountry: "TR",
+    },
+  };
+
   return (
     <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh", paddingTop: 40, paddingBottom: 80 }}>
+      <script {...jsonLdScriptProps(universityJsonLd)} />
       <div className="container">
         <nav style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
           <a href="/" style={{ color: "var(--text-muted)" }}>Home</a> {" › "}
