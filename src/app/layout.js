@@ -1,8 +1,15 @@
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "./context/LanguageContext";
 import ClientShell from "./components/ClientShell";
 import { SITE_URL } from "@/lib/siteConfig";
 import { jsonLdScriptProps } from "@/lib/jsonLd";
+
+// Self-hosted via next/font instead of the CSS @import it replaced — that @import
+// was creating a render-blocking chain (app CSS -> fonts.googleapis.com CSS ->
+// font files) that PageSpeed flagged as the biggest contributor to a slow LCP.
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
@@ -47,7 +54,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <body>
         <script {...jsonLdScriptProps(organizationJsonLd)} />
         <script {...jsonLdScriptProps(websiteJsonLd)} />
