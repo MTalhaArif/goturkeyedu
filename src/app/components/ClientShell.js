@@ -62,7 +62,7 @@ function Header() {
               </>
             )}
             <a href="/contact" className="top-auth-link">{t.contact}</a>
-            <select className="lang-select" value={lang} onChange={e => setLang(e.target.value)}>
+            <select className="lang-select" aria-label="Select language" value={lang} onChange={e => setLang(e.target.value)}>
               <option value="EN">EN</option>
               <option value="TR">TR</option>
               <option value="AR">AR</option>

@@ -1,5 +1,8 @@
 :root {
-  --primary: #E03C31;
+  /* Was #E03C31 - white text on it (buttons, active tabs) measured 4.32:1 contrast,
+     just under WCAG AA's 4.5:1 minimum. Darkened slightly (still reads as the same
+     red) to pass at ~4.77:1; --primary-dark (hover state) already darker than this. */
+  --primary: #D83228;
   --primary-dark: #b82b22;
   --secondary: #1a237e;
   --secondary-light: #283593;
@@ -199,7 +202,10 @@ button { font-family: var(--font-body); }
 .dot-nav a:hover { background: var(--primary); border-color: var(--primary); transform: scale(1.4); }
 
 /* ─── FLOATING BTNS ────────────────────────── */
-.floating-contact { position: fixed; bottom: 28px; right: 28px; width: 56px; height: 56px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(224,60,49,0.45); z-index: 1000; transition: all 0.3s; }
+/* bottom offset is 110px, not 28px, so this doesn't overlap the ChatWidget launcher
+   (fixed bottom:24/right:24, 58px tall, plus its "help" bubble sits above that) - they
+   were stacked on the same corner and effectively unclickable underneath one another. */
+.floating-contact { position: fixed; bottom: 110px; right: 28px; width: 56px; height: 56px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(224,60,49,0.45); z-index: 1000; transition: all 0.3s; }
 .floating-contact:hover { transform: scale(1.1); background: var(--primary-dark); }
 .scroll-to-top { position: fixed; bottom: 95px; right: 32px; width: 46px; height: 46px; background: var(--secondary); color: white; border: none; border-radius: 50%; font-size: 20px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.2); z-index: 1000; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
 .scroll-to-top:hover { background: var(--primary); transform: translateY(-4px); }
