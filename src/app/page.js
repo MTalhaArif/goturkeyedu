@@ -9,5 +9,13 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <PageClient />;
+  return (
+    <>
+      {/* First hero slide's background image is the LCP element; preloading it
+          lets the browser start fetching it during HTML parsing instead of
+          discovering it late via CSS background-image resolution. */}
+      <link rel="preload" as="image" href="/hero.webp" fetchPriority="high" />
+      <PageClient />
+    </>
+  );
 }
