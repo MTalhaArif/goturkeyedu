@@ -67,8 +67,8 @@ function UniversitiesPageInner() {
 
             {/* City */}
             <div style={{ marginBottom: 25 }}>
-              <label style={{ display: "block", fontWeight: 600, marginBottom: 8, fontSize: 14 }}>{t.filterByCity}</label>
-              <select className="form-select" value={selectedCity} onChange={e => setSelectedCity(e.target.value)}>
+              <label htmlFor="city-filter" style={{ display: "block", fontWeight: 600, marginBottom: 8, fontSize: 14 }}>{t.filterByCity}</label>
+              <select id="city-filter" className="form-select" value={selectedCity} onChange={e => setSelectedCity(e.target.value)}>
                 <option value="">{t.allCities}</option>
                 {uniqueCities.map(city => (
                   <option key={city} value={city}>{city}</option>

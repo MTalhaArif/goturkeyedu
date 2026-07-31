@@ -146,7 +146,7 @@ function Header() {
             <a href="/blog" className="nav-link-btn">Blog</a>
           </nav>
 
-          <button className="mobile-toggle" onClick={() => setMobileOpen(!mobileOpen)}>☰</button>
+          <button className="mobile-toggle" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Open menu" aria-expanded={mobileOpen}>☰</button>
         </div>
 
         {mobileOpen && (
@@ -181,7 +181,7 @@ function Footer() {
                 <div style={{ fontSize: 22, fontWeight: 900, color: "white", fontFamily: "var(--font-heading)" }}>
                   <span style={{ color: "#E03C31" }}>Go</span>Turkey
                 </div>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>Discover your potential</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)" }}>Discover your potential</div>
               </div>
             </div>
             <p className="footer-text">
@@ -193,7 +193,7 @@ function Footer() {
             </div>
             <div style={{ display: "flex", gap: 14 }}>
               {["Facebook","Instagram","Twitter","YouTube"].map(s => (
-                <span key={s} style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, cursor: "pointer" }}>{s}</span>
+                <span key={s} style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer" }}>{s}</span>
               ))}
             </div>
           </div>
@@ -237,8 +237,8 @@ function Footer() {
         </div>
         <div className="footer-bottom">
           <p>© 2024 Go Turkey. This website is managed by Go Turkey in association with YÖK (CoHE). |
-            Powered by <a href="https://goturkey.gen.tr" style={{ color: "rgba(255,255,255,0.5)" }}>Holistence</a> |
-            <a href="/sitemap" style={{ color: "rgba(255,255,255,0.5)", marginLeft: 8 }}>Sitemap</a>
+            Powered by <a href="https://goturkey.gen.tr" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "underline" }}>Holistence</a> |
+            <a href="/sitemap" style={{ color: "rgba(255,255,255,0.7)", textDecoration: "underline", marginLeft: 8 }}>Sitemap</a>
           </p>
         </div>
       </div>

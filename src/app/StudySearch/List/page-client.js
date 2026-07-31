@@ -78,8 +78,8 @@ function StudySearchListInner() {
             </div>
 
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontWeight: 700, marginBottom: 7, fontSize: 13, color: "var(--secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.educationLevel}</label>
-              <select className="form-select" value={selectedLevel} onChange={e => setSelectedLevel(e.target.value)}>
+              <label htmlFor="level-filter" style={{ display: "block", fontWeight: 700, marginBottom: 7, fontSize: 13, color: "var(--secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.educationLevel}</label>
+              <select id="level-filter" className="form-select" value={selectedLevel} onChange={e => setSelectedLevel(e.target.value)}>
                 <option value="">{t.allLevelsOption}</option>
                 <option value="associate">{t.associateDegree}</option>
                 <option value="bachelor">{t.bachelorsDegree}</option>
@@ -89,8 +89,8 @@ function StudySearchListInner() {
             </div>
 
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontWeight: 700, marginBottom: 7, fontSize: 13, color: "var(--secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.teachingLanguageLabel}</label>
-              <select className="form-select" value={selectedLang} onChange={e => setSelectedLang(e.target.value)}>
+              <label htmlFor="lang-filter" style={{ display: "block", fontWeight: 700, marginBottom: 7, fontSize: 13, color: "var(--secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.teachingLanguageLabel}</label>
+              <select id="lang-filter" className="form-select" value={selectedLang} onChange={e => setSelectedLang(e.target.value)}>
                 <option value="">{t.allLanguagesOption}</option>
                 <option value="english">{t.langEnglish}</option>
                 <option value="turkish">{t.langTurkish}</option>
@@ -100,8 +100,8 @@ function StudySearchListInner() {
             </div>
 
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontWeight: 700, marginBottom: 7, fontSize: 13, color: "var(--secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.cityLabel}</label>
-              <select className="form-select" value={selectedCity} onChange={e => setSelectedCity(e.target.value)}>
+              <label htmlFor="city-filter" style={{ display: "block", fontWeight: 700, marginBottom: 7, fontSize: 13, color: "var(--secondary)", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.cityLabel}</label>
+              <select id="city-filter" className="form-select" value={selectedCity} onChange={e => setSelectedCity(e.target.value)}>
                 <option value="">{t.allCities}</option>
                 {uniqueCities.map(c => <option key={c} value={c}>{c}</option>)}
               </select>

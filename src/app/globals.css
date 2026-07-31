@@ -87,9 +87,12 @@ button { font-family: var(--font-body); }
 .hero-content { position: relative; z-index: 2; max-width: 820px; padding: 0 24px; animation: fadeUp 0.8s ease-out; }
 .hero-content h1 { font-size: 52px; margin-bottom: 20px; text-shadow: 0 4px 16px rgba(0,0,0,0.4); letter-spacing: -1px; }
 .hero-content p { font-size: 19px; margin-bottom: 30px; font-weight: 300; text-shadow: 0 2px 8px rgba(0,0,0,0.3); opacity: 0.93; }
-.hero-dots { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5; }
-.hero-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.5); border: none; cursor: pointer; transition: all 0.3s; padding: 0; }
-.hero-dot.active { background: white; transform: scale(1.4); }
+.hero-dots { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; z-index: 5; }
+/* Button itself is a 24x24 tap target (touch-target size); the visible dot is a smaller
+   ::after so the design still looks like small indicator dots. */
+.hero-dot { width: 24px; height: 24px; background: transparent; border: none; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; }
+.hero-dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.5); transition: all 0.3s; }
+.hero-dot.active::after { background: white; transform: scale(1.4); }
 
 /* ─── STUDY FINDER ─────────────────────────── */
 /* Sits below the hero as a full-width panel — no overlap with hero content */
@@ -109,7 +112,7 @@ button { font-family: var(--font-body); }
   gap: 20px;
   border-top: 4px solid var(--primary);
 }
-.study-finder h3 { color: var(--secondary); font-size: 17px; white-space: nowrap; margin-top: 4px; }
+.study-finder h2 { color: var(--secondary); font-size: 17px; white-space: nowrap; margin-top: 4px; }
 .study-finder-form { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 12px; align-items: end; }
 .form-select, .form-input { width: 100%; padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 7px; font-family: var(--font-body); font-size: 13.5px; outline: none; color: var(--text-main); background: white; transition: border-color 0.2s; }
 .form-select:focus, .form-input:focus { border-color: var(--primary); }
@@ -210,7 +213,7 @@ button { font-family: var(--font-body); }
 .footer-links li { margin-bottom: 10px; }
 .footer-links a { color: rgba(255,255,255,0.7); font-size: 14px; display: block; }
 .footer-links a:hover { color: var(--accent); padding-left: 4px; }
-.footer-bottom { text-align: center; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.45); font-size: 13px; }
+.footer-bottom { text-align: center; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); font-size: 13px; }
 
 /* ─── ANIMATIONS ───────────────────────────── */
 @keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
@@ -219,7 +222,7 @@ button { font-family: var(--font-body); }
 @media (max-width: 1024px) {
   .study-finder { grid-template-columns: 1fr; padding: 24px; }
   .study-finder-form { grid-template-columns: repeat(2, 1fr); }
-  .study-finder h3 { white-space: normal; }
+  .study-finder h2 { white-space: normal; }
   .region-content { grid-template-columns: 1fr; }
   .qa-layout { grid-template-columns: 1fr; }
   .step-content-panel { padding: 30px; }

@@ -162,35 +162,40 @@ export default function Home() {
           {/* Slide Dots — inside slides wrap so they sit over the image */}
           <div className="hero-dots">
             {heroSlides.map((_, i) => (
-              <button key={i} className={`hero-dot ${i === activeSlide ? "active" : ""}`} onClick={() => { setActiveSlide(i); clearInterval(timerRef.current); }} />
+              <button
+                key={i}
+                className={`hero-dot ${i === activeSlide ? "active" : ""}`}
+                onClick={() => { setActiveSlide(i); clearInterval(timerRef.current); }}
+                aria-label={`Go to slide ${i + 1}`}
+              />
             ))}
           </div>
         </div>
 
         {/* STUDY FINDER — below hero slides, full-width bar, zero overlap */}
         <div className="study-finder">
-          <h3>🔍 {t.studyFinder}</h3>
+          <h2>🔍 {t.studyFinder}</h2>
           <form className="study-finder-form" onSubmit={handleStudySearch}>
-            <select className="form-select" value={studyForm.level} onChange={e => setStudyForm(f => ({...f, level: e.target.value}))}>
+            <select className="form-select" aria-label={t.educationLevel} value={studyForm.level} onChange={e => setStudyForm(f => ({...f, level: e.target.value}))}>
               <option value="">{t.educationLevel}</option>
               <option value="associate">{t.associateDegree}</option>
               <option value="bachelor">{t.bachelorsDegree}</option>
               <option value="master">{t.mastersDegree}</option>
               <option value="doctorate">{t.doctorate}</option>
             </select>
-            <select className="form-select" value={studyForm.city} onChange={e => setStudyForm(f => ({...f, city: e.target.value}))}>
+            <select className="form-select" aria-label={t.selectCity} value={studyForm.city} onChange={e => setStudyForm(f => ({...f, city: e.target.value}))}>
               <option value="">{t.selectCity}</option>
               {["İstanbul","Ankara","İzmir","Bursa","Trabzon","Erzurum","Konya","Antalya","Gaziantep","Diyarbakır","Eskişehir","Kayseri","Samsun","Mersin","Adana"].map(c => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
-            <select className="form-select" value={studyForm.type} onChange={e => setStudyForm(f => ({...f, type: e.target.value}))}>
+            <select className="form-select" aria-label={t.teachingType} value={studyForm.type} onChange={e => setStudyForm(f => ({...f, type: e.target.value}))}>
               <option value="">{t.teachingType}</option>
               <option value="formal">{t.formal}</option>
               <option value="evening">{t.eveningEd}</option>
               <option value="distance">{t.distanceLearning}</option>
             </select>
-            <select className="form-select" value={studyForm.language} onChange={e => setStudyForm(f => ({...f, language: e.target.value}))}>
+            <select className="form-select" aria-label={t.studyLanguage} value={studyForm.language} onChange={e => setStudyForm(f => ({...f, language: e.target.value}))}>
               <option value="">{t.studyLanguage}</option>
               <option value="english">English</option>
               <option value="turkish">Turkish</option>
@@ -390,7 +395,7 @@ export default function Home() {
                 <div className="student-info">
                   <div className="student-avatar">{s.name.charAt(0)}</div>
                   <div>
-                    <h4 className="student-name">{s.name}</h4>
+                    <h3 className="student-name">{s.name}</h3>
                     <p className="student-major">{s.faculty} \ {s.country}</p>
                   </div>
                 </div>
@@ -422,7 +427,7 @@ export default function Home() {
       </a>
 
       {showScrollTop && (
-        <button className="scroll-to-top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>↑</button>
+        <button className="scroll-to-top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Scroll to top">↑</button>
       )}
     </>
   );
