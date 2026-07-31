@@ -141,6 +141,9 @@ function Header() {
 
             {/* TR-YOS */}
             <a href="/tryos" className="nav-link-btn nav-tryos">TR-YÖS</a>
+
+            {/* BLOG */}
+            <a href="/blog" className="nav-link-btn">Blog</a>
           </nav>
 
           <button className="mobile-toggle" onClick={() => setMobileOpen(!mobileOpen)}>☰</button>
@@ -156,6 +159,7 @@ function Header() {
             <a href="/for-students/scholarships">{t.scholarships}</a>
             <a href="/for-students/faq">{t.faq}</a>
             <a href="/tryos">TR-YÖS</a>
+            <a href="/blog">Blog</a>
             <a href="/contact">{t.contact}</a>
           </div>
         )}
@@ -198,6 +202,7 @@ function Footer() {
             <h3>{t.usefulInfo}</h3>
             <ul className="footer-links">
               {[
+                ["/blog", "Blog"],
                 ["/for-students/faq", t.faq],
                 ["/for-students/scholarships", t.scholarships],
                 ["/for-students/recognition", t.recognition],

@@ -1,8 +1,10 @@
 import { SITE_URL } from "@/lib/siteConfig";
 import { getAllUniversitySlugs } from "@/lib/universitySlug";
+import { blogPosts } from "@/app/data/blogPosts";
 
 const staticRoutes = [
   { path: "/", changeFrequency: "weekly", priority: 1 },
+  { path: "/blog", changeFrequency: "weekly", priority: 0.8 },
   { path: "/StudySearch/List", changeFrequency: "weekly", priority: 0.9 },
   { path: "/StudyinTurkey/Universities", changeFrequency: "weekly", priority: 0.9 },
   { path: "/tryos", changeFrequency: "monthly", priority: 0.8 },
@@ -46,5 +48,12 @@ export default function sitemap() {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...universityEntries];
+  const blogEntries = blogPosts.map((post) => ({
+    url: `${SITE_URL}/blog/${post.slug}`,
+    lastModified: post.updatedDate || post.publishedDate,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...universityEntries, ...blogEntries];
 }
