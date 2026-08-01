@@ -32,8 +32,15 @@ service cloud.firestore {
     // ── Portal accounts (students, super_admin, agency, sub_agency) ─────────
     match /users/{uid} {
       allow read: if isSignedIn() && (request.auth.uid == uid || isSuperAdmin() || isParentAgencyOf(uid));
-      // Accounts are created/deleted only via the Admin-SDK routes, which bypass rules.
-      allow create, delete: if false;
+      // Students self-register client-side (src/app/register/page.js: Auth signup
+      // immediately followed by writing their own profile doc) - only 'student'
+      // role docs with no hierarchy fields may be self-created this way. Agency/
+      // sub_agency/super_admin accounts are still created only via the Admin-SDK
+      // routes, which bypass these rules entirely.
+      allow create: if isSignedIn() && request.auth.uid == uid &&
+        request.resource.data.role == 'student' &&
+        !('parentAgencyId' in request.resource.data);
+      allow delete: if false;
       // Own profile may be edited for non-sensitive fields; role/status/hierarchy
       // fields are locked to server-side (Admin SDK) writes only.
       allow update: if isSignedIn() && request.auth.uid == uid &&
