@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import JSZip from "jszip";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { adminDict } from "@/app/data/adminTranslations";
 import { auth } from "@/lib/firebase";
@@ -814,6 +815,7 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
   const ReviewApplicationModal = ({ app, onClose }) => {
     const [offerForm, setOfferForm] = useState({ universityName: app?.universityName || "", programName: app?.programName || "", notes: "" });
     const [busy, setBusy] = useState(false);
+    const [zipping, setZipping] = useState(false);
 
     const run = async (fn) => {
       setBusy(true);
@@ -824,6 +826,39 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
     const handleMakeOffer = (e) => {
       e.preventDefault();
       run(() => setApplicationStage(app.id, "offer_made", { offer: { ...offerForm, madeAt: new Date().toISOString() } }));
+    };
+
+    const allFiles = [
+      ...Object.entries(app.documents || {}).filter(([, f]) => f).map(([key, f]) => ({ label: key, ...f })),
+      ...(app.paymentScreenshot ? [{ label: "payment_screenshot", ...app.paymentScreenshot }] : []),
+    ];
+
+    const downloadAllAsZip = async () => {
+      setZipping(true);
+      try {
+        const zip = new JSZip();
+        const used = new Set();
+        for (const f of allFiles) {
+          const res = await fetch(f.url);
+          const blob = await res.blob();
+          let filename = f.name || f.label;
+          if (used.has(filename)) filename = `${f.label}_${filename}`;
+          used.add(filename);
+          zip.file(filename, blob);
+        }
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${(app.studentName || "student").replace(/\s+/g, "_")}_documents.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert("Couldn't build the zip file: " + err.message);
+      }
+      setZipping(false);
     };
 
     return (
@@ -837,7 +872,19 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
           <p style={{ fontSize: 14, marginBottom: 16 }}><strong>{t.applications.stageLabel}:</strong> {t.applications.stages[app.stage] || app.stage}</p>
 
           <div style={{ marginBottom: 16 }}>
-            <strong style={{ fontSize: 13 }}>{t.applications.documentsLabel}</strong>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <strong style={{ fontSize: 13 }}>{t.applications.documentsLabel}</strong>
+              {allFiles.length > 0 && (
+                <button
+                  type="button"
+                  disabled={zipping}
+                  onClick={downloadAllAsZip}
+                  style={{ background: "rgba(26,35,126,0.08)", color: "var(--secondary)", border: "none", padding: "5px 12px", borderRadius: 6, cursor: zipping ? "default" : "pointer", fontSize: 12, fontWeight: 600 }}
+                >
+                  {zipping ? "Zipping…" : "⬇ Download All (ZIP)"}
+                </button>
+              )}
+            </div>
             <ul style={{ marginTop: 8, paddingLeft: 18, fontSize: 13, lineHeight: 1.9 }}>
               {Object.entries(app.documents || {}).map(([key, f]) => (
                 f ? <li key={key}>{key}: <a href={f.url} target="_blank" rel="noreferrer">{f.name}</a></li> : null
