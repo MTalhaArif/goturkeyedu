@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getAllPrograms, getInstructionLanguage } from "@/app/data/universities";
 import { getUniversityBySlug, getAllUniversitySlugs } from "@/lib/universitySlug";
 import { jsonLdScriptProps } from "@/lib/jsonLd";
+import { SITE_URL } from "@/lib/siteConfig";
 
 export function generateStaticParams() {
   return getAllUniversitySlugs().map((slug) => ({ slug }));
@@ -74,9 +75,20 @@ export default async function UniversityDetailPage({ params }) {
     },
   };
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Universities", item: `${SITE_URL}/StudyinTurkey/Universities` },
+      { "@type": "ListItem", position: 3, name: uni.name, item: `${SITE_URL}/universities/${slug}` },
+    ],
+  };
+
   return (
     <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh", paddingTop: 40, paddingBottom: 80 }}>
       <script {...jsonLdScriptProps(universityJsonLd)} />
+      <script {...jsonLdScriptProps(breadcrumbJsonLd)} />
       <div className="container">
         <nav style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
           <a href="/" style={{ color: "var(--text-muted)" }}>Home</a> {" › "}

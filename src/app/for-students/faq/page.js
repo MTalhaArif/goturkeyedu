@@ -1,4 +1,6 @@
 import PageClient from "./page-client";
+import { faqs } from "@/app/data/faq";
+import { jsonLdScriptProps } from "@/lib/jsonLd";
 
 export const metadata = {
   title: "FAQ - Studying in Türkiye | Go Turkey",
@@ -8,6 +10,24 @@ export const metadata = {
   },
 };
 
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.q,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.a,
+    },
+  })),
+};
+
 export default function Page() {
-  return <PageClient />;
+  return (
+    <>
+      <script {...jsonLdScriptProps(faqJsonLd)} />
+      <PageClient />
+    </>
+  );
 }

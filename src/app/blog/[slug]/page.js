@@ -39,9 +39,20 @@ export default async function BlogPostPage({ params }) {
     mainEntityOfPage: `${SITE_URL}/blog/${slug}`,
   };
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title, item: `${SITE_URL}/blog/${slug}` },
+    ],
+  };
+
   return (
     <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh", paddingTop: 40, paddingBottom: 80 }}>
       <script {...jsonLdScriptProps(articleJsonLd)} />
+      <script {...jsonLdScriptProps(breadcrumbJsonLd)} />
       <div className="container" style={{ maxWidth: 800 }}>
         <nav style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
           <a href="/" style={{ color: "var(--text-muted)" }}>Home</a> {" › "}
