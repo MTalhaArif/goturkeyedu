@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# live-rules backups made by scripts/firebase/deploy-rules.mjs
+rules-backup/

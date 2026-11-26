@@ -218,7 +218,9 @@ function parseDoc(html) {
   const heading = text((b.match(/<h6 class="text-capitalize"[^>]*>([\s\S]*?)<\/h6>/) || [])[1]);
   const infoBlock = (b.match(/<div class="col-md-12 mt-2">([\s\S]*?)<\/div>/) || [])[1] || "";
   const infoPairs = [...infoBlock.matchAll(/<b>([^<]*?)\s*:?\s*:\s*<\/b>\s*([^<]*)/g)].map(m => [text(m[1]).replace(/:$/, "").trim(), text(m[2])]).filter(p => p[1]);
-  const subj = b.match(/<b>\s*([^<:]+?)\s*:\s*<\/b>\s*([\s\S]*?)<\/p>\s*<p[^>]*>\s*<b>\s*([^<:]+?)\s*:\s*<\/b>\s*([\s\S]*?)<\/p>/);
+  // Subject + date live in the "d-flex mb-1" block as two <p><b>Label : </b>value</p>.
+  const subjBlock = (b.match(/<div class="col-md-12 d-flex mb-1[^"]*"[^>]*>([\s\S]*?)<\/div>/) || [])[1] || "";
+  const subj = subjBlock.match(/<p[^>]*>\s*<b>\s*([^<:]+?)\s*:\s*<\/b>\s*([\s\S]*?)<\/p>\s*<p[^>]*>\s*<b>\s*([^<:]+?)\s*:\s*<\/b>\s*([\s\S]*?)<\/p>/);
   const title = text((b.match(/<div class="col-md-12 text-center mb-1">\s*<h6>([\s\S]*?)<\/h6>/) || [])[1]).replace(/\s*-\s*$/, "");
   const tableHtml = (b.match(/<table class="table table-bordered" style="font-size:\.9em">([\s\S]*?)<\/table>/) || [])[1] || "";
   const rows = []; let perLine = 1;
