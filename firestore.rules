@@ -146,6 +146,14 @@ service cloud.firestore {
       allow read, write: if isSuperAdmin();
     }
 
+    // ── ERP carried over from the legacy portal (src/lib/erp/schema.js) ─────────
+    // Every ERP collection is named erp_*; Super Admin only. The public document
+    // verification page reads erp_documents server-side via the Admin SDK, so no
+    // anonymous read is needed here.
+    match /{coll}/{docId} {
+      allow read, write: if coll.matches('erp_.*') && isSuperAdmin();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

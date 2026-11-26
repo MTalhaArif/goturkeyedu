@@ -250,7 +250,7 @@ function Footer() {
 
 export default function ClientShell({ children }) {
   const pathname = usePathname();
-  const isAdminOrAuth = pathname?.startsWith("/admin") || pathname?.startsWith("/agency") || pathname?.startsWith("/subagency") || pathname?.startsWith("/dashboard") || pathname === "/login" || pathname === "/register";
+  const isAdminOrAuth = pathname?.startsWith("/admin") || pathname?.startsWith("/belge_dogrulama") || pathname?.startsWith("/agency") || pathname?.startsWith("/subagency") || pathname?.startsWith("/dashboard") || pathname === "/login" || pathname === "/register";
 
   if (isAdminOrAuth) {
     return <main>{children}</main>;

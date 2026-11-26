@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import JSZip from "jszip";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { adminDict } from "@/app/data/adminTranslations";
+import { SECTIONS as ERP_SECTIONS } from "@/lib/erp/schema";
+import ErpSection from "./erp/ErpSection";
+import ErpDashboard from "./erp/ErpDashboard";
 import { auth } from "@/lib/firebase";
 import {
   getAgencies, getSubAgenciesByParent, getAllSubAgencies,
@@ -127,7 +130,14 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
 
   const t = adminDict[lang] || adminDict["EN"];
 
-  const SIDEBAR_MENUS = [
+  // Super Admin gets the full ERP carried over from the legacy portal (one sidebar
+  // entry per legacy menu section); Agency/Sub-Agency keep their tenant-scoped menus.
+  const SIDEBAR_MENUS = role === "super_admin" ? [
+    { id: "dashboard", icon: "📊", label: t.sidebar.dashboard },
+    { id: "agencies", icon: "🏛️", label: t.sidebar.agencies },
+    { id: "applications", icon: "📋", label: t.sidebar.applications },
+    ...ERP_SECTIONS.map(s => ({ id: `erp:${s.id}`, icon: s.icon, label: s.label })),
+  ] : [
     { id: "dashboard", icon: "📊", label: t.sidebar.dashboard },
     { id: "agencies", icon: "🏛️", label: t.sidebar.agencies },
     { id: "subagencies", icon: "🏢", label: t.sidebar.subagencies },
@@ -1292,7 +1302,8 @@ export default function PortalDashboard({ role, homePath, loginPath }) {
         </header>
 
         <div style={{ padding: 32, flex: 1, overflowY: "auto" }}>
-          {activeTab === "dashboard" && renderDashboard()}
+          {activeTab === "dashboard" && (role === "super_admin" ? <ErpDashboard /> : renderDashboard())}
+          {activeTab.startsWith("erp:") && role === "super_admin" && <ErpSection key={activeTab} sectionId={activeTab.slice(4)} />}
           {activeTab === "agencies" && role === "super_admin" && renderAgencies()}
           {activeTab === "subagencies" && role === "agency" && renderSubAgencies()}
           {activeTab === "front_office" && renderFrontOffice()}
