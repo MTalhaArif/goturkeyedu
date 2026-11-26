@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getAllPrograms, getInstructionLanguage } from "@/app/data/universities";
 import { getUniversityBySlug, getAllUniversitySlugs } from "@/lib/universitySlug";
 import { jsonLdScriptProps } from "@/lib/jsonLd";
@@ -91,7 +92,7 @@ export default async function UniversityDetailPage({ params }) {
       <script {...jsonLdScriptProps(breadcrumbJsonLd)} />
       <div className="container">
         <nav style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
-          <a href="/" style={{ color: "var(--text-muted)" }}>Home</a> {" › "}
+          <Link href="/" style={{ color: "var(--text-muted)" }}>Home</Link> {" › "}
           <a href="/StudyinTurkey/Universities" style={{ color: "var(--text-muted)" }}>Universities</a> {" › "}
           <span>{uni.name}</span>
         </nav>

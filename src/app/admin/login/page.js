@@ -3,17 +3,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getUserProfile, upsertUser } from "@/lib/firestore";
+import { getUserProfile } from "@/lib/firestore";
+import Link from "next/link";
 
 // Shared portal login for Super Admin, Agency, and Sub-Agency accounts.
 // Role and access are determined by the Firestore `users` profile, not a
 // hardcoded email — the profile is the single source of truth for who's who.
-//
-// The original Super Admin account predates this profile-based system and has
-// no Firestore `users` doc yet. This bootstraps it exactly once, on first login
-// after this change — every account created from here on gets its profile at
-// creation time via the /api/agencies and /api/subagencies routes instead.
-const BOOTSTRAP_SUPER_ADMIN_EMAIL = "goturkeytr@gmail.com";
+// Agency/sub-agency profiles are created by the /api/agencies and /api/subagencies
+// routes; a Super Admin profile can only be created server-side or in the Firebase
+// Console (firestore.rules blocks clients from writing role: "super_admin").
 
 const DASHBOARD_PATH_BY_ROLE = {
   super_admin: "/admin/dashboard",
@@ -37,11 +35,7 @@ export default function AdminLogin() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      let profile = await getUserProfile(user.uid);
-      if (!profile && user.email === BOOTSTRAP_SUPER_ADMIN_EMAIL) {
-        await upsertUser(user.uid, { name: "Super Admin", email: user.email, role: "super_admin", status: "active" });
-        profile = await getUserProfile(user.uid);
-      }
+      const profile = await getUserProfile(user.uid);
       const dashboardPath = profile && DASHBOARD_PATH_BY_ROLE[profile.role];
 
       if (!dashboardPath) {
@@ -224,9 +218,9 @@ export default function AdminLogin() {
           </form>
 
           <div style={{ textAlign: "center", marginTop: 24 }}>
-            <a href="/" style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.4)"}>
+            <Link href="/" style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "white"} onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.4)"}>
               ← Return to Main Site
-            </a>
+            </Link>
           </div>
         </div>
       </div>

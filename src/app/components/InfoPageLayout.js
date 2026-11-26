@@ -1,5 +1,6 @@
 "use client";
 import { useLanguage } from "@/app/context/LanguageContext";
+import Link from "next/link";
 
 export default function InfoPageLayout({ title, breadcrumb, icon, children, sidebar }) {
   const { t } = useLanguage();
@@ -9,7 +10,7 @@ export default function InfoPageLayout({ title, breadcrumb, icon, children, side
       <div style={{ background: "linear-gradient(135deg, var(--secondary) 0%, #283593 100%)", padding: "48px 0 36px", color: "white" }}>
         <div className="container">
           <div style={{ fontSize: 13, opacity: 0.65, marginBottom: 10 }}>
-            <a href="/" style={{ color: "rgba(255,255,255,0.65)" }}>Home</a> › {breadcrumb || title}
+            <Link href="/" style={{ color: "rgba(255,255,255,0.65)" }}>Home</Link> › {breadcrumb || title}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
             <span style={{ fontSize: 42 }}>{icon}</span>

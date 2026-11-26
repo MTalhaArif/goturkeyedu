@@ -390,7 +390,7 @@ export default function Home() {
           <div className="students-grid">
             {students.map((s, i) => (
               <div key={i} className="card testimonial-card">
-                <div className="quote">"</div>
+                <div className="quote">&quot;</div>
                 <p className="card-text" style={{ fontStyle: "italic", lineHeight: 1.8 }}>{s.quote}</p>
                 <div className="student-info">
                   <div className="student-avatar">{s.name.charAt(0)}</div>

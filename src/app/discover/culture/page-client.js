@@ -4,7 +4,7 @@ export default function CulturePage() {
   return (
     <InfoPageLayout title="Culture" breadcrumb="Discover Türkiye" icon="🎨" sidebar={true}>
       <p style={{color:"var(--text-muted)",fontSize:16,lineHeight:1.9,marginBottom:36,borderLeft:"4px solid var(--primary)",paddingLeft:20}}>
-        Türkiye's culture is a magnificent tapestry woven from thousands of years of history, blending Eastern and Western influences into a unique and vibrant identity.
+        Türkiye&apos;s culture is a magnificent tapestry woven from thousands of years of history, blending Eastern and Western influences into a unique and vibrant identity.
       </p>
       {[
         {title:"Arts and Architecture",icon:"🏛️",body:"Turkish architecture reflects the country's rich heritage — from ancient Greek and Roman ruins to the grand mosques and palaces of the Ottoman Empire. The Hagia Sophia, Topkapı Palace, and the Blue Mosque are UNESCO-recognized masterpieces. Contemporary Turkish art, cinema, and literature thrive in cities like İstanbul, with world-class museums and galleries."},

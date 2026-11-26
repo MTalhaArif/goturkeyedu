@@ -2,11 +2,31 @@ export const runtime = "nodejs";
 
 import { getAnthropicClient } from "@/lib/anthropic";
 import { getChatbotSystemPrompt } from "@/lib/chatbotContext";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 const MAX_HISTORY_MESSAGES = 20;
+const MAX_MESSAGE_CHARS = 4000;
+const MAX_TOTAL_CHARS = 24000;
 const MODEL = "claude-opus-4-8";
 
+// Public, unauthenticated endpoint backed by a paid model: cap requests per IP.
+// See lib/rateLimit.js — per-instance, not a hard global limit.
+const RATE_LIMIT_PER_WINDOW = 20;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+
 export async function POST(request) {
+  const { allowed, retryAfterSeconds } = rateLimit(
+    `chatbot:${getClientIp(request)}`,
+    RATE_LIMIT_PER_WINDOW,
+    RATE_LIMIT_WINDOW_MS
+  );
+  if (!allowed) {
+    return Response.json(
+      { error: "Too many messages. Please wait a few minutes and try again." },
+      { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
+    );
+  }
+
   let messages;
   try {
     ({ messages } = await request.json());
@@ -18,13 +38,22 @@ export async function POST(request) {
     return Response.json({ error: "messages array is required." }, { status: 400 });
   }
 
-  const trimmed = messages
+  let trimmed = messages
     .slice(-MAX_HISTORY_MESSAGES)
     .filter(m => m && typeof m.content === "string" && (m.role === "user" || m.role === "assistant"))
-    .map(m => ({ role: m.role, content: m.content.slice(0, 4000) }));
+    .map(m => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS) }));
 
-  if (trimmed.length === 0 || trimmed[0].role !== "user") {
-    return Response.json({ error: "messages must start with a user message." }, { status: 400 });
+  // Bound total input size by dropping the oldest turns (keeps long chats working
+  // instead of rejecting them), then re-align so the history starts with a user turn.
+  let totalChars = trimmed.reduce((sum, m) => sum + m.content.length, 0);
+  while (trimmed.length > 1 && totalChars > MAX_TOTAL_CHARS) {
+    totalChars -= trimmed[0].content.length;
+    trimmed = trimmed.slice(1);
+  }
+  while (trimmed.length > 0 && trimmed[0].role !== "user") trimmed = trimmed.slice(1);
+
+  if (trimmed.length === 0) {
+    return Response.json({ error: "messages must include a user message." }, { status: 400 });
   }
 
   let client;

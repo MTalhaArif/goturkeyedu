@@ -4,7 +4,7 @@ export default function ClimatePage() {
   return (
     <InfoPageLayout title="Climate" breadcrumb="Discover Türkiye" icon="🌤️" sidebar={true}>
       <p style={{color:"var(--text-muted)",fontSize:16,lineHeight:1.9,marginBottom:36,borderLeft:"4px solid var(--primary)",paddingLeft:20}}>
-        Türkiye experiences a variety of climates due to its large size and diverse geography. Whatever season you prefer, you'll find it somewhere in Türkiye!
+        Türkiye experiences a variety of climates due to its large size and diverse geography. Whatever season you prefer, you&apos;ll find it somewhere in Türkiye!
       </p>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:32}}>
         {[{s:"🌸",name:"Spring",desc:"Warm & mild, 15–22°C"},{s:"☀️",name:"Summer",desc:"Hot & dry, 28–38°C"},{s:"🍂",name:"Autumn",desc:"Mild & colorful, 12–22°C"},{s:"❄️",name:"Winter",desc:"Cold & snowy, -2–8°C"}].map(s=>(

@@ -5,7 +5,7 @@ export default function HigherEdSystemPage() {
   return (
     <InfoPageLayout title="Turkish Higher Education System" breadcrumb="Why Türkiye?" icon="🏛️" sidebar={true}>
       <p style={{ color: "var(--text-muted)", fontSize: 16, lineHeight: 1.9, marginBottom: 36, borderLeft: "4px solid var(--primary)", paddingLeft: 20 }}>
-        Türkiye's higher education system is governed by the Council of Higher Education (YÖK) and follows the principles of the Bologna Process, ensuring compatibility with the European Higher Education Area.
+        Türkiye&apos;s higher education system is governed by the Council of Higher Education (YÖK) and follows the principles of the Bologna Process, ensuring compatibility with the European Higher Education Area.
       </p>
 
       {[

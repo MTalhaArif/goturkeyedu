@@ -3,6 +3,7 @@ import { getAllBlogSlugs, getBlogPostBySlug } from "@/app/data/blogPosts";
 import BlogArticleBody from "@/app/components/BlogArticleBody";
 import { jsonLdScriptProps } from "@/lib/jsonLd";
 import { SITE_URL } from "@/lib/siteConfig";
+import Link from "next/link";
 
 export function generateStaticParams() {
   return getAllBlogSlugs().map((slug) => ({ slug }));
@@ -55,8 +56,8 @@ export default async function BlogPostPage({ params }) {
       <script {...jsonLdScriptProps(breadcrumbJsonLd)} />
       <div className="container" style={{ maxWidth: 800 }}>
         <nav style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 20 }}>
-          <a href="/" style={{ color: "var(--text-muted)" }}>Home</a> {" › "}
-          <a href="/blog" style={{ color: "var(--text-muted)" }}>Blog</a> {" › "}
+          <Link href="/" style={{ color: "var(--text-muted)" }}>Home</Link> {" › "}
+          <Link href="/blog" style={{ color: "var(--text-muted)" }}>Blog</Link> {" › "}
           <span>{post.title}</span>
         </nav>
 

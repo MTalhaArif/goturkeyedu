@@ -1,9 +1,8 @@
 rules_version = '2';
 
-// NOT auto-deployed. Written fresh for the Agency/Sub-Agency hierarchy feature —
-// review and reconcile against whatever rules are currently live in the Firebase
-// Console (project goturkey-74ff4) before pasting this in or running
-// `firebase deploy --only firestore:rules`.
+// NOT auto-deployed by Vercel. Deploy with `firebase deploy --only firestore:rules`
+// (firebase.json points here) — review against what's live in the Firebase Console
+// (project goturkey-74ff4) first.
 //
 // Account creation/disable for agencies & sub-agencies goes through the
 // Firebase Admin SDK (Next.js Route Handlers under src/app/api/**), which
@@ -25,13 +24,24 @@ service cloud.firestore {
       return isSignedIn() && myProfile().role == 'super_admin';
     }
 
-    function isParentAgencyOf(uid) {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(uid)).data.parentAgencyId == request.auth.uid;
+    // Disabling an account (via /api/*/status) can't invalidate an ID token that was
+    // already issued, so tenant data access also checks the stored status. get() of
+    // the same doc is cached within one rule evaluation, so this adds no extra reads
+    // beyond the first myProfile() lookup.
+    function isActiveTenant() {
+      return isSignedIn() && myProfile().status != 'disabled';
     }
 
     // ── Portal accounts (students, super_admin, agency, sub_agency) ─────────
     match /users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isSuperAdmin() || isParentAgencyOf(uid));
+      // The parent-agency check reads resource.data directly (not a get() of the same
+      // doc) so that list queries like getSubAgenciesByParent() can be proven safe —
+      // Firestore rejects a whole query whose rule it can't evaluate from the query.
+      allow read: if isSignedIn() && (
+        request.auth.uid == uid ||
+        isSuperAdmin() ||
+        (resource.data.parentAgencyId == request.auth.uid && isActiveTenant())
+      );
       // Students self-register client-side (src/app/register/page.js: Auth signup
       // immediately followed by writing their own profile doc) - only 'student'
       // role docs with no hierarchy fields may be self-created this way. Agency/
@@ -49,18 +59,19 @@ service cloud.firestore {
 
     // ── Student CRM records managed by an Agency/Sub-Agency ─────────────────
     match /students/{studentId} {
-      allow read: if isSuperAdmin() ||
-        (isSignedIn() && resource.data.agencyId == request.auth.uid) ||
-        (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      allow read: if isSuperAdmin() || (
+        isActiveTenant() &&
+        (resource.data.agencyId == request.auth.uid || resource.data.ownerId == request.auth.uid)
+      );
 
-      allow create: if isSignedIn() &&
+      allow create: if isActiveTenant() &&
         request.resource.data.ownerId == request.auth.uid &&
         (
           (myProfile().role == 'agency' && request.resource.data.agencyId == request.auth.uid) ||
           (myProfile().role == 'sub_agency' && request.resource.data.agencyId == myProfile().parentAgencyId)
         );
 
-      allow update, delete: if isSuperAdmin() || (isSignedIn() && resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isSuperAdmin() || (isActiveTenant() && resource.data.ownerId == request.auth.uid);
     }
 
     // ── Public marketing-site collections ────────────────────────────────────
@@ -81,16 +92,49 @@ service cloud.firestore {
 
     // Student dashboard applications, auto-ID (many per self-registered student —
     // one per university/program applied to), ownership via the studentUid field.
-    // Self can create their own docs and update most fields (documents, payment
-    // screenshot, accepting an offer); only Super Admin can transition a stage into
-    // payment_verified or offer_made (those require manual admin review).
+    //
+    // Stage workflows (see STATE_STEPS / FOUNDATION_STEPS in StudentDashboard.js):
+    //   State:      documents_pending → payment_pending → payment_submitted → payment_verified* → offer_made* → accepted
+    //   Foundation: documents_pending → under_review → offer_made* → accepted
+    //   (* = Super Admin only)
+    //
+    // Students may only make the forward moves the dashboard itself makes, and may
+    // only touch `stage` and `paymentScreenshot` — `offer`, `adminNotes`, `studentUid`
+    // and the university fields are fixed at creation / admin-owned.
+    function studentStartStage(stage) {
+      return stage in ['documents_pending', 'payment_pending', 'under_review'];
+    }
+
+    function studentStageMoveAllowed(from, to) {
+      return from == to ||
+        (from == 'documents_pending' && to in ['payment_pending', 'under_review']) ||
+        (from == 'payment_pending' && to == 'payment_submitted') ||
+        (from == 'offer_made' && to == 'accepted');
+    }
+
     match /applications/{appId} {
       allow read: if isSignedIn() && (resource.data.studentUid == request.auth.uid || isSuperAdmin());
-      allow create: if isSignedIn() && request.resource.data.studentUid == request.auth.uid;
-      allow update: if isSuperAdmin() || (
-        isSignedIn() && resource.data.studentUid == request.auth.uid &&
-        (request.resource.data.stage == resource.data.stage || !(request.resource.data.stage in ['payment_verified', 'offer_made']))
+
+      allow create: if isSuperAdmin() || (
+        isSignedIn() &&
+        request.resource.data.studentUid == request.auth.uid &&
+        studentStartStage(request.resource.data.stage) &&
+        request.resource.data.get('offer', null) == null &&
+        request.resource.data.get('paymentScreenshot', null) == null &&
+        request.resource.data.get('adminNotes', '') == ''
       );
+
+      allow update: if isSuperAdmin() || (
+        isSignedIn() &&
+        resource.data.studentUid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['stage', 'paymentScreenshot', 'updatedAt']) &&
+        studentStageMoveAllowed(resource.data.stage, request.resource.data.stage) &&
+        // Payment proof can only be (re)uploaded while payment is still the student's step.
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['paymentScreenshot']) ||
+          resource.data.stage in ['payment_pending', 'payment_submitted'])
+      );
+
       allow delete: if false;
     }
 

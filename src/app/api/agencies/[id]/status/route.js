@@ -21,6 +21,10 @@ export async function PATCH(request, { params }) {
     }
 
     await adminAuth.updateUser(id, { disabled });
+    // Ends existing sessions for anything that checks revocation. Direct Firestore
+    // access from a still-valid ID token is cut off separately: firestore.rules
+    // requires status != 'disabled' for agency/sub-agency data access.
+    if (disabled) await adminAuth.revokeRefreshTokens(id);
     await adminDb.collection("users").doc(id).update({
       status: disabled ? "disabled" : "active",
       updatedAt: new Date().toISOString(),

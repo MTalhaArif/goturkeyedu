@@ -19,8 +19,8 @@ export default function WhatStudentsSayPage() {
           <div key={i} style={{background:"white",borderRadius:16,padding:"28px",boxShadow:"0 4px 20px rgba(0,0,0,0.07)",border:"1px solid var(--border)",position:"relative",transition:"all 0.3s"}}
             onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.boxShadow="0 12px 30px rgba(0,0,0,0.12)";}}
             onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,0.07)";}}>
-            <div style={{fontSize:60,color:"rgba(224,60,49,0.08)",fontFamily:"Georgia,serif",lineHeight:1,position:"absolute",top:8,left:16}}>"</div>
-            <p style={{color:"var(--text-muted)",lineHeight:1.85,fontSize:14.5,marginBottom:22,paddingTop:20,fontStyle:"italic"}}>"{s.quote}"</p>
+            <div style={{fontSize:60,color:"rgba(224,60,49,0.08)",fontFamily:"Georgia,serif",lineHeight:1,position:"absolute",top:8,left:16}}>&quot;</div>
+            <p style={{color:"var(--text-muted)",lineHeight:1.85,fontSize:14.5,marginBottom:22,paddingTop:20,fontStyle:"italic"}}>&quot;{s.quote}&quot;</p>
             <div style={{display:"flex",alignItems:"center",gap:14,paddingTop:16,borderTop:"1px solid var(--border)"}}>
               <div style={{width:46,height:46,borderRadius:"50%",background:"var(--secondary)",color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:20,fontFamily:"var(--font-heading)",flexShrink:0}}>{s.avatar}</div>
               <div>

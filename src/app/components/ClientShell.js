@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { usePathname } from "next/navigation";
 import ChatWidget from "./ChatWidget";
+import Link from "next/link";
 
 const ROLE_HOME_PATHS = { student: "/dashboard", super_admin: "/admin/dashboard", agency: "/agency/dashboard", sub_agency: "/subagency/dashboard" };
 
@@ -75,14 +76,14 @@ function Header() {
       {/* MAIN HEADER */}
       <header className="header">
         <div className="container">
-          <a href="/" className="logo">
+          <Link href="/" className="logo">
             <div className="logo-flag">🇹🇷</div>
             <div className="logo-text">
               <span className="logo-go">Go</span>
               <span className="logo-turkey">Turkey</span>
               <div className="logo-tagline">Discover your potential</div>
             </div>
-          </a>
+          </Link>
 
           <nav className="nav-links" dir={lang === "AR" ? "rtl" : "ltr"}>
             {/* WHY TÜRKIYE */}
@@ -119,7 +120,7 @@ function Header() {
             </div>
 
             {/* APPLY IN 5 STEPS */}
-            <a href="/#item-2" className="nav-link-btn">{t.applyIn5Steps}</a>
+            <Link href="/#item-2" className="nav-link-btn">{t.applyIn5Steps}</Link>
 
             {/* FOR STUDENTS */}
             <div className="nav-item">
@@ -143,23 +144,24 @@ function Header() {
             <a href="/tryos" className="nav-link-btn nav-tryos">TR-YÖS</a>
 
             {/* BLOG */}
-            <a href="/blog" className="nav-link-btn">Blog</a>
+            <Link href="/blog" className="nav-link-btn">Blog</Link>
           </nav>
 
           <button className="mobile-toggle" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Open menu" aria-expanded={mobileOpen}>☰</button>
         </div>
 
         {mobileOpen && (
-          <div className="mobile-menu">
-            <a href="/">{t.home}</a>
-            <a href="/#item-1">{t.whyTurkiye}</a>
+          <div className="mobile-menu" onClick={(e) => { if (e.target.closest("a")) setMobileOpen(false); }}>
+            {/* Links here navigate client-side, so close the menu on any link click. */}
+            <Link href="/">{t.home}</Link>
+            <Link href="/#item-1">{t.whyTurkiye}</Link>
             <a href="/StudyinTurkey/Universities">{t.universities}</a>
             <a href="/StudySearch/List">{t.programs}</a>
-            <a href="/#item-2">{t.applyIn5Steps}</a>
+            <Link href="/#item-2">{t.applyIn5Steps}</Link>
             <a href="/for-students/scholarships">{t.scholarships}</a>
             <a href="/for-students/faq">{t.faq}</a>
             <a href="/tryos">TR-YÖS</a>
-            <a href="/blog">Blog</a>
+            <Link href="/blog">Blog</Link>
             <a href="/contact">{t.contact}</a>
           </div>
         )}

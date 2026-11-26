@@ -1,6 +1,7 @@
 "use client";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { upsertUser } from "@/lib/firestore";
@@ -85,12 +86,12 @@ function RegisterPageInner() {
     <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #1a237e 0%, #283593 50%, #E03C31 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div style={{ width: "100%", maxWidth: 520 }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <a href="/" style={{ display: "inline-flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+          <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
             <span style={{ fontSize: 36 }}>🇹🇷</span>
             <div style={{ fontSize: 28, fontWeight: 900, color: "white", fontFamily: "var(--font-heading)" }}>
               <span style={{ color: "#ffb300" }}>Go</span>Turkey
             </div>
-          </a>
+          </Link>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 4 }}>Student Portal Registration</div>
         </div>
 
@@ -173,8 +174,8 @@ function RegisterPageInner() {
                   <select required className="form-select" value={form.educationLevel} onChange={e => update("educationLevel", e.target.value)}>
                     <option value="">Select level...</option>
                     <option value="associate">Associate Degree</option>
-                    <option value="bachelor">Bachelor's Degree</option>
-                    <option value="master">Master's Degree</option>
+                    <option value="bachelor">Bachelor&apos;s Degree</option>
+                    <option value="master">Master&apos;s Degree</option>
                     <option value="doctorate">Doctorate / PhD</option>
                   </select>
                 </div>

@@ -23,7 +23,8 @@ export async function verifyCallerRole(request, allowedRoles) {
 
   let decoded;
   try {
-    decoded = await adminAuth.verifyIdToken(idToken);
+    // checkRevoked: reject tokens from sessions ended by revokeRefreshTokens / disabling.
+    decoded = await adminAuth.verifyIdToken(idToken, true);
   } catch (err) {
     console.error("verifyIdToken failed:", err.code, err.message);
     throw new ApiAuthError(401, "Invalid or expired session.");

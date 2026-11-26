@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/app/context/LanguageContext";
 import { getUserProfile, upsertUser, createApplication, getApplicationsByStudent, updateApplication, updateApplicationStage } from "@/lib/firestore";
 import { uploadApplicationFile } from "@/lib/storage";
@@ -335,10 +336,10 @@ function StudentDashboardInner() {
     <div style={{ minHeight: "100vh", background: "#f8fafc" }} dir={isRtl ? "rtl" : "ltr"}>
       {/* Top bar */}
       <div style={{ background: "var(--secondary)", padding: "16px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-        <a href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
           <span style={{ fontSize: 26 }}>🇹🇷</span>
           <span style={{ fontSize: 20, fontWeight: 900, color: "white" }}><span style={{ color: "var(--accent)" }}>Go</span>Turkey</span>
-        </a>
+        </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 14 }}>{t.sdWelcomeBack}, <strong>{profile?.name || user.name}</strong></span>
           <select value={lang} onChange={e => setLang(e.target.value)} style={{ background: "rgba(255,255,255,0.1)", color: "white", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: "4px 8px", fontSize: 13 }}>

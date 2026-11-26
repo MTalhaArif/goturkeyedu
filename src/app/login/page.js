@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getUserProfile } from "@/lib/firestore";
@@ -61,7 +62,7 @@ export default function LoginPage() {
       <div style={{ width: "100%", maxWidth: 440 }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <a href="/" style={{ display: "inline-flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+          <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
             <span style={{ fontSize: 40 }}>🇹🇷</span>
             <div>
               <div style={{ fontSize: 32, fontWeight: 900, color: "white", fontFamily: "var(--font-heading)", letterSpacing: -1 }}>
@@ -69,7 +70,7 @@ export default function LoginPage() {
               </div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>Student Portal</div>
             </div>
-          </a>
+          </Link>
         </div>
 
         {/* Card */}
@@ -132,7 +133,7 @@ export default function LoginPage() {
 
           <div style={{ marginTop: 24, textAlign: "center" }}>
             <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-              Don't have an account? <a href="/register" style={{ color: "var(--primary)", fontWeight: 700 }}>Create one free →</a>
+              Don&apos;t have an account? <a href="/register" style={{ color: "var(--primary)", fontWeight: 700 }}>Create one free →</a>
             </p>
           </div>
 
