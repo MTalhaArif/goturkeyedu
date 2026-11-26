@@ -6,16 +6,43 @@ import { useEffect, useMemo, useState } from "react";
 import { STUDENT_FIELD_GROUPS, STUDENT_FIELDS } from "@/lib/erp/schema";
 import { listAll, createRow, updateRow, deleteRow, bulkDelete, listWhere, fullName, getSettings } from "@/lib/erp/data";
 import { Card, Btn, Badge, Modal, Table, Grid, Field, FieldInput, useRefOptions, displayValue, missingRequired, exportCsv, inputStyle, fmtDate, C } from "./ui";
-import { StudentFeesPanel } from "./Fees";
-import { StudentDocumentsPanel } from "./Documents";
+import StudentProfile from "./StudentProfile";
+
+export { StudentProfile };
 
 const nameOf = (opts, key, id) => (opts[key] || []).find(r => r.id === id)?.name || "";
 
+// Returns [students|null, reload, error]. Errors (e.g. expired session) are shown
+// inline instead of silently rendering an empty list.
 function useStudents() {
   const [students, setStudents] = useState(null);
-  const reload = async () => setStudents(await listAll("students", { force: true }));
-  useEffect(() => { listAll("students").then(setStudents).catch(e => { alert(e.message); setStudents([]); }); }, []);
-  return [students, reload];
+  const [error, setError] = useState("");
+  const reload = async () => {
+    setError("");
+    try { setStudents(await listAll("students", { force: true })); } catch (e) { setError(e.message); setStudents([]); }
+  };
+  useEffect(() => { listAll("students").then(setStudents).catch(e => { setError(e.message); setStudents([]); }); }, []);
+  return [students, reload, error];
+}
+
+function LoadError({ error, onRetry }) {
+  if (!error) return null;
+  return (
+    <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: 12, padding: "12px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+      <span>{error}</span><Btn small kind="ghost" onClick={onRetry}>Retry</Btn>
+    </div>
+  );
+}
+
+// Legacy action icons on every student row: ≡ view profile, ✏ edit, $ collect fees.
+function RowActions({ s, onView, onEdit, onFees }) {
+  return (
+    <div style={{ display: "flex", gap: 6, whiteSpace: "nowrap" }}>
+      <Btn small kind="ghost" onClick={() => onView(s)} title="View" aria-label="View">☰</Btn>
+      <Btn small kind="info" onClick={() => onEdit(s)} title="Edit" aria-label="Edit">✏️</Btn>
+      {onFees && <Btn small kind="ok" onClick={() => onFees(s)} title="Collect Fees" aria-label="Collect Fees">$</Btn>}
+    </div>
+  );
 }
 
 function ClassSectionPicker({ value, onChange, opts, extra }) {
@@ -40,11 +67,11 @@ const inClass = (s, classId, sectionId) =>
 
 // ── Student Details ─────────────────────────────────────────────────────────────
 export function StudentList({ disabledOnly = false }) {
-  const [students, reload] = useStudents();
+  const [students, reload, loadError] = useStudents();
   const opts = useRefOptions(STUDENT_FIELDS);
   const [crit, setCrit] = useState({});
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(null);
+  const [open, setOpen] = useState(null); // { student, tab }
   const [editing, setEditing] = useState(null);
 
   const rows = useMemo(() => (students || [])
@@ -58,7 +85,8 @@ export function StudentList({ disabledOnly = false }) {
 
   const columns = [
     { label: "Admission No", key: "admissionNo" },
-    { label: "Student Name", render: s => <a href="#" onClick={e => { e.preventDefault(); setOpen(s); }} style={{ color: C.info, fontWeight: 600 }}>{fullName(s)}</a>, text: s => fullName(s) },
+    { label: "Student Name", render: s => <a href="#" onClick={e => { e.preventDefault(); setOpen({ student: s }); }} style={{ color: C.info, fontWeight: 600 }}>{fullName(s)}</a>, text: s => fullName(s) },
+    { label: "Roll No", key: "rollNo" },
     { label: "Class", render: s => `${nameOf(opts, "classes", s.classId)}${s.sectionId ? ` (${nameOf(opts, "sections", s.sectionId)})` : ""}`, text: s => nameOf(opts, "classes", s.classId) },
     { label: "Father Name", key: "fatherName" },
     { label: "Date Of Birth", render: s => fmtDate(s.dob), text: s => s.dob },
@@ -66,16 +94,12 @@ export function StudentList({ disabledOnly = false }) {
     { label: "Category", render: s => nameOf(opts, "categories", s.categoryId), text: s => nameOf(opts, "categories", s.categoryId) },
     { label: "Mobile Number", key: "mobile" },
     { label: "Passport", key: "passportNo" },
-    { label: "Action", render: s => (
-      <div style={{ display: "flex", gap: 6 }}>
-        <Btn small kind="ghost" onClick={() => setOpen(s)} title="View">👁️</Btn>
-        <Btn small kind="info" onClick={() => setEditing(s)} title="Edit">✏️</Btn>
-      </div>
-    ) },
+    { label: "Action", render: s => <RowActions s={s} onView={x => setOpen({ student: x })} onEdit={setEditing} onFees={x => setOpen({ student: x, tab: "fees" })} /> },
   ];
 
   return (
     <>
+      <LoadError error={loadError} onRetry={reload} />
       <Card title={disabledOnly ? "Disabled Students" : "Select Criteria"}>
         <ClassSectionPicker value={crit} onChange={setCrit} opts={opts} extra={
           <Field label="Search By Keyword"><input value={q} onChange={e => setQ(e.target.value)} placeholder="Name, admission no, passport, phone…" style={{ ...inputStyle, minWidth: 280 }} /></Field>
@@ -85,7 +109,7 @@ export function StudentList({ disabledOnly = false }) {
         <Table columns={columns} rows={rows.slice(0, 500)} empty={students ? "No students found." : "Loading…"} />
         {rows.length > 500 && <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>Showing first 500 — narrow the criteria to see more.</div>}
       </Card>
-      {open && <StudentProfile student={open} opts={opts} onClose={() => setOpen(null)} onChanged={async () => { await reload(); setOpen(null); }} onEdit={() => { setEditing(open); setOpen(null); }} />}
+      {open && <StudentProfile key={open.student.id + (open.tab || "")} student={open.student} initialTab={open.tab} opts={opts} onClose={() => setOpen(null)} onChanged={reload} onEdit={() => { setEditing(open.student); setOpen(null); }} />}
       {editing && <StudentForm initial={editing} opts={opts} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await reload(); }} />}
     </>
   );
@@ -95,11 +119,12 @@ export const DisabledStudents = () => <StudentList disabledOnly />;
 
 // ── All Students (legacy student/searchAll: every student with total Paid) ──────
 export function AllStudents() {
-  const [students] = useStudents();
+  const [students, reload, loadError] = useStudents();
   const opts = useRefOptions(STUDENT_FIELDS);
   const [paid, setPaid] = useState({});
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState(null);
+  const [open, setOpen] = useState(null); // { student, tab }
+  const [editing, setEditing] = useState(null);
   useEffect(() => {
     listAll("fee_payments", { force: true })
       .then(ps => setPaid(ps.reduce((m, p) => { m[p.studentId] = (m[p.studentId] || 0) + (Number(p.amount) || 0); return m; }, {})))
@@ -110,22 +135,25 @@ export function AllStudents() {
     .sort((a, b) => String(b.admissionNo || "").localeCompare(String(a.admissionNo || ""), undefined, { numeric: true }));
   const columns = [
     { label: "Admission No", key: "admissionNo" },
-    { label: "Student Name", render: s => <a href="#" onClick={e => { e.preventDefault(); setOpen(s); }} style={{ color: C.info, fontWeight: 600 }}>{fullName(s)}</a>, text: s => fullName(s) },
+    { label: "Student Name", render: s => <a href="#" onClick={e => { e.preventDefault(); setOpen({ student: s }); }} style={{ color: C.info, fontWeight: 600 }}>{fullName(s)}</a>, text: s => fullName(s) },
     { label: "Class", render: s => nameOf(opts, "classes", s.classId), text: s => nameOf(opts, "classes", s.classId) },
     { label: "Date Of Birth", render: s => fmtDate(s.dob), text: s => s.dob },
     { label: "Gender", key: "gender" }, { label: "Mobile Number", key: "mobile" },
     { label: "Paid", render: s => <span style={{ fontWeight: 600 }}>{paid[s.id] || 0}</span>, text: s => paid[s.id] || 0, style: { background: "rgba(239,68,68,0.06)" } },
     { label: "Status", render: s => s.status === "disabled" ? <Badge color="#dc2626">Disabled</Badge> : <Badge>Active</Badge>, text: s => s.status || "active" },
+    { label: "Action", render: s => <RowActions s={s} onView={x => setOpen({ student: x })} onEdit={setEditing} onFees={x => setOpen({ student: x, tab: "fees" })} /> },
   ];
   return (
     <>
+      <LoadError error={loadError} onRetry={reload} />
       <Card title={`All Students (${rows.length})`} actions={<>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search…" style={{ ...inputStyle, maxWidth: 260 }} />
-        <Btn kind="ghost" onClick={() => exportCsv("all-students.csv", columns, rows)}>⬇ CSV</Btn>
+        <Btn kind="ghost" onClick={() => exportCsv("all-students.csv", columns.slice(0, -1), rows)}>⬇ CSV</Btn>
       </>}>
         <Table columns={columns} rows={rows.slice(0, 1000)} empty={students ? "No students." : "Loading…"} />
       </Card>
-      {open && <StudentProfile student={open} opts={opts} onClose={() => setOpen(null)} onChanged={() => setOpen(null)} onEdit={() => setOpen(null)} />}
+      {open && <StudentProfile key={open.student.id + (open.tab || "")} student={open.student} initialTab={open.tab} opts={opts} onClose={() => setOpen(null)} onChanged={reload} onEdit={() => { setEditing(open.student); setOpen(null); }} />}
+      {editing && <StudentForm initial={editing} opts={opts} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await reload(); }} />}
     </>
   );
 }
@@ -158,27 +186,40 @@ function StudentForm({ initial, opts, onClose, onSaved, inline }) {
     setSaving(true);
     try {
       const data = { ...values, fullName: fullName(values) };
-      if (initial?.id) await updateRow("students", initial.id, data);
+      let id = initial?.id;
+      if (id) await updateRow("students", id, data);
       else {
         const dupe = (await listAll("students", { force: true })).find(s => String(s.admissionNo) === String(values.admissionNo));
         if (dupe) { alert(`Admission No ${values.admissionNo} is already used by ${fullName(dupe)}.`); setSaving(false); return; }
-        await createRow("students", { ...data, status: "active" });
+        id = await createRow("students", { ...data, status: "active" });
+      }
+      // Sibling links are mutual: add/remove this student on the other records too.
+      const before = new Set(initial?.siblingIds || []), after = new Set(values.siblingIds || []);
+      const all = await listAll("students", { force: true });
+      for (const sid of new Set([...before, ...after])) {
+        const other = all.find(x => x.id === sid); if (!other) continue;
+        const theirs = new Set(other.siblingIds || []);
+        if (after.has(sid)) theirs.add(id); else theirs.delete(id);
+        await updateRow("students", sid, { siblingIds: [...theirs] });
       }
       onSaved?.();
       if (inline) { setValues({ admissionDate: new Date().toISOString().slice(0, 10), status: "active", rte: "No" }); alert("Student saved."); }
     } catch (e) { alert(e.message); } finally { setSaving(false); }
   };
 
-  const body = STUDENT_FIELD_GROUPS.map(g => (
-    <div key={g.title} style={{ marginBottom: 20 }}>
-      <h4 style={{ fontSize: 14, color: C.ink, margin: "0 0 12px", paddingBottom: 6, borderBottom: `1px solid ${C.line}` }}>{g.title}</h4>
-      <Grid>
-        {g.fields.map(f => (
-          <Field key={f.key} label={f.label} required={f.required} wide={f.type === "textarea"}>
-            <FieldInput field={f} value={values[f.key]} onChange={v => setValues(p => ({ ...p, [f.key]: v }))} refOptions={opts} folder="students" />
-          </Field>
-        ))}
-      </Grid>
+  const body = STUDENT_FIELD_GROUPS.map((g, gi) => (
+    <div key={g.title} style={{ marginBottom: 20, border: `1px solid ${C.line}`, borderRadius: 10, overflow: "hidden" }}>
+      <h4 style={{ fontSize: 15, color: C.ink, margin: 0, padding: "10px 14px", background: C.soft, borderBottom: `1px solid ${C.line}` }}>{gi === 0 ? (initial?.id ? "Edit Student" : "Student Admission") : g.title}</h4>
+      <div style={{ padding: 14 }}>
+        <Grid>
+          {g.fields.map(f => (
+            <Field key={f.key} label={f.label} required={f.required} wide={f.type === "textarea"}>
+              <FieldInput field={f} value={values[f.key]} onChange={v => setValues(p => ({ ...p, [f.key]: v }))} refOptions={opts} folder="students" />
+            </Field>
+          ))}
+        </Grid>
+        {gi === 0 && <SiblingPicker value={values.siblingIds || []} selfId={initial?.id} onChange={ids => setValues(p => ({ ...p, siblingIds: ids }))} />}
+      </div>
     </div>
   ));
 
@@ -190,129 +231,35 @@ function StudentForm({ initial, opts, onClose, onSaved, inline }) {
   );
 }
 
+// "+ Add Sibling": link other student records (shown on the profile card).
+function SiblingPicker({ value, selfId, onChange }) {
+  const [all, setAll] = useState([]);
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (open && !all.length) listAll("students").then(setAll).catch(() => {}); }, [open, all.length]);
+  const byId = Object.fromEntries(all.map(s => [s.id, s]));
+  const k = q.trim().toLocaleLowerCase("tr");
+  const matches = k.length < 2 ? [] : all.filter(s => s.id !== selfId && !value.includes(s.id) && [fullName(s), s.admissionNo].some(v => String(v || "").toLocaleLowerCase("tr").includes(k))).slice(0, 8);
+  return (
+    <div style={{ marginTop: 12 }}>
+      <a href="#" onClick={e => { e.preventDefault(); setOpen(o => !o); }} style={{ color: C.info, fontWeight: 600, fontSize: 14 }}>+ Add Sibling</a>
+      {value.length > 0 && <span style={{ marginLeft: 12, fontSize: 13 }}>{value.map(id => <span key={id} style={{ marginRight: 10 }}>{byId[id] ? fullName(byId[id]) : id} <a href="#" onClick={e => { e.preventDefault(); onChange(value.filter(x => x !== id)); }} style={{ color: "#dc2626" }}>×</a></span>)}</span>}
+      {open && (
+        <div style={{ marginTop: 8, maxWidth: 420 }}>
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search sibling by name or admission no" style={inputStyle} />
+          {matches.map(s => <div key={s.id} onClick={() => { onChange([...value, s.id]); setQ(""); }} style={{ padding: "6px 8px", cursor: "pointer", borderBottom: `1px solid ${C.line}`, fontSize: 13 }}>{fullName(s)} · {s.admissionNo}</div>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function StudentAdmission() {
   const opts = useRefOptions(STUDENT_FIELDS);
   return <StudentForm opts={opts} inline />;
 }
 
 function strip(r) { const { id, createdAt, updatedAt, ...rest } = r; return rest; }
-
-// ── Profile (tabs: Profile, Fees, Documents, Uploads, Timeline) ────────────────
-export function StudentProfile({ student, opts, onClose, onChanged, onEdit }) {
-  const [tab, setTab] = useState("profile");
-  const [s, setS] = useState(student);
-  const [disableOpen, setDisableOpen] = useState(false);
-  const save = async patch => { await updateRow("students", s.id, patch); setS(p => ({ ...p, ...patch })); };
-
-  const enable = async () => { if (confirm("Enable this student?")) { await save({ status: "active", disableReasonId: "", disableDate: "", disableNote: "" }); onChanged(); } };
-  const remove = async () => {
-    if (!confirm(`Permanently delete ${fullName(s)} and their fee records? Issued documents stay verifiable.`)) return;
-    for (const f of await listWhere("student_fees", "studentId", "==", s.id)) await deleteRow("student_fees", f.id);
-    for (const p of await listWhere("fee_payments", "studentId", "==", s.id)) await deleteRow("fee_payments", p.id);
-    await deleteRow("students", s.id); onChanged();
-  };
-
-  return (
-    <Modal title={fullName(s)} width={1100} onClose={onClose}>
-      <div style={{ display: "flex", gap: 20, marginBottom: 16, flexWrap: "wrap" }}>
-        <div style={{ width: 110, height: 130, borderRadius: 10, background: C.soft, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, flexShrink: 0 }}>
-          {s.photo?.url ? <img src={s.photo.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
-        </div>
-        <div style={{ flex: 1, minWidth: 240, fontSize: 14, lineHeight: 1.9 }}>
-          <div><b>Admission No:</b> {s.admissionNo} &nbsp; {s.status === "disabled" ? <Badge color="#dc2626">Disabled</Badge> : <Badge>Active</Badge>}</div>
-          <div><b>Class:</b> {nameOf(opts, "classes", s.classId)} {s.sectionId && `(${nameOf(opts, "sections", s.sectionId)})`}</div>
-          <div><b>Gender:</b> {s.gender} &nbsp; <b>Passport:</b> {s.passportNo} &nbsp; <b>Nationality:</b> {s.nationality}</div>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <Btn kind="info" onClick={onEdit}>✏️ Edit</Btn>
-          {s.status === "disabled" ? <Btn kind="ok" onClick={enable}>Enable</Btn> : <Btn kind="ghost" onClick={() => setDisableOpen(true)}>Disable</Btn>}
-          <Btn kind="danger" onClick={remove}>Delete</Btn>
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: 4, borderBottom: `1px solid ${C.line}`, marginBottom: 16, flexWrap: "wrap" }}>
-        {[["profile", "Profile"], ["fees", "Fees"], ["documents", "Documents & QR"], ["uploads", "Uploaded Documents"], ["timeline", "Timeline"]].map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} style={{ padding: "8px 14px", border: "none", background: "none", borderBottom: tab === id ? `3px solid ${C.primary}` : "3px solid transparent", fontWeight: 600, color: tab === id ? C.ink : C.muted, cursor: "pointer" }}>{label}</button>
-        ))}
-      </div>
-
-      {tab === "profile" && STUDENT_FIELD_GROUPS.map(g => (
-        <div key={g.title} style={{ marginBottom: 16 }}>
-          <h4 style={{ fontSize: 14, margin: "0 0 8px", color: C.ink }}>{g.title}</h4>
-          <table style={{ width: "100%", fontSize: 13.5, borderCollapse: "collapse" }}><tbody>
-            {g.fields.filter(f => s[f.key] !== undefined && s[f.key] !== "").map(f => (
-              <tr key={f.key} style={{ borderBottom: "1px solid #f1f5f9" }}><td style={{ padding: "6px", color: C.muted, width: "35%" }}>{f.label}</td><td style={{ padding: "6px" }}>{displayValue(f, s[f.key], opts)}</td></tr>
-            ))}
-          </tbody></table>
-        </div>
-      ))}
-      {tab === "profile" && s.status === "disabled" && <div style={{ fontSize: 13, color: "#dc2626" }}>Disabled on {fmtDate(s.disableDate)} — {nameOf(opts, "disable_reasons", s.disableReasonId)} {s.disableNote}</div>}
-
-      {tab === "fees" && <StudentFeesPanel student={s} />}
-      {tab === "documents" && <StudentDocumentsPanel student={s} />}
-      {tab === "uploads" && <UploadsPanel s={s} save={save} />}
-      {tab === "timeline" && <TimelinePanel s={s} save={save} />}
-
-      {disableOpen && <DisableModal opts={opts} onClose={() => setDisableOpen(false)} onSave={async v => { await save({ status: "disabled", ...v }); setDisableOpen(false); onChanged(); }} />}
-    </Modal>
-  );
-}
-
-function DisableModal({ opts, onClose, onSave }) {
-  const [v, setV] = useState({ disableDate: new Date().toISOString().slice(0, 10) });
-  return (
-    <Modal title="Disable Student" width={520} onClose={onClose} footer={<><Btn kind="ghost" onClick={onClose}>Cancel</Btn><Btn onClick={() => v.disableReasonId ? onSave(v) : alert("Reason is required")}>Save</Btn></>}>
-      <Grid cols={1}>
-        <Field label="Reason" required><select value={v.disableReasonId || ""} onChange={e => setV(p => ({ ...p, disableReasonId: e.target.value }))} style={inputStyle}><option value="">Select</option>{(opts.disable_reasons || []).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></Field>
-        <Field label="Date"><input type="date" value={v.disableDate} onChange={e => setV(p => ({ ...p, disableDate: e.target.value }))} style={inputStyle} /></Field>
-        <Field label="Note"><textarea value={v.disableNote || ""} onChange={e => setV(p => ({ ...p, disableNote: e.target.value }))} style={inputStyle} /></Field>
-      </Grid>
-    </Modal>
-  );
-}
-
-function UploadsPanel({ s, save }) {
-  const [title, setTitle] = useState(""); const [file, setFile] = useState(null);
-  const uploads = s.uploads || [];
-  return (
-    <>
-      <div style={{ display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 16, flexWrap: "wrap" }}>
-        <Field label="Title"><input value={title} onChange={e => setTitle(e.target.value)} style={{ ...inputStyle, minWidth: 220 }} /></Field>
-        <Field label="Document"><FieldInput field={{ type: "file" }} value={file} onChange={setFile} folder={`students/${s.id}`} /></Field>
-        <Btn disabled={!title || !file} onClick={async () => { await save({ uploads: [...uploads, { title, file, at: new Date().toISOString() }] }); setTitle(""); setFile(null); }}>Upload</Btn>
-      </div>
-      <Table columns={[
-        { label: "Title", key: "title" },
-        { label: "File Name", render: u => u.file?.url ? <a href={u.file.url} target="_blank" rel="noreferrer">{u.file.name}</a> : (u.file?.legacyPath || "") },
-        { label: "Action", render: (u, i) => <Btn small kind="danger" onClick={() => confirm("Remove this document?") && save({ uploads: uploads.filter((_, j) => j !== i) })}>🗑️</Btn> },
-      ]} rows={uploads} rowKey={(u, i) => i} />
-    </>
-  );
-}
-
-function TimelinePanel({ s, save }) {
-  const [v, setV] = useState({ date: new Date().toISOString().slice(0, 10), visible: true });
-  const items = [...(s.timeline || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  return (
-    <>
-      <Grid>
-        <Field label="Title" required><input value={v.title || ""} onChange={e => setV(p => ({ ...p, title: e.target.value }))} style={inputStyle} /></Field>
-        <Field label="Date" required><input type="date" value={v.date} onChange={e => setV(p => ({ ...p, date: e.target.value }))} style={inputStyle} /></Field>
-        <Field label="Attach Document"><FieldInput field={{ type: "file" }} value={v.document} onChange={d => setV(p => ({ ...p, document: d }))} folder={`students/${s.id}/timeline`} /></Field>
-        <Field label="Visible to this person"><input type="checkbox" checked={!!v.visible} onChange={e => setV(p => ({ ...p, visible: e.target.checked }))} /></Field>
-        <Field label="Description" wide><textarea value={v.description || ""} onChange={e => setV(p => ({ ...p, description: e.target.value }))} style={inputStyle} /></Field>
-      </Grid>
-      <div style={{ margin: "12px 0 20px" }}><Btn disabled={!v.title} onClick={async () => { await save({ timeline: [...(s.timeline || []), v] }); setV({ date: new Date().toISOString().slice(0, 10), visible: true }); }}>Add To Timeline</Btn></div>
-      {items.length === 0 && <div style={{ color: C.muted }}>No timeline entries.</div>}
-      {items.map((it, i) => (
-        <div key={i} style={{ borderLeft: `3px solid ${C.primary}`, padding: "6px 12px", marginBottom: 10 }}>
-          <div style={{ fontWeight: 700 }}>{it.title} <span style={{ color: C.muted, fontWeight: 400, fontSize: 12 }}>{fmtDate(it.date)}</span></div>
-          <div style={{ fontSize: 13.5 }}>{it.description}</div>
-          {it.document?.url && <a href={it.document.url} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>📎 {it.document.name}</a>}
-        </div>
-      ))}
-    </>
-  );
-}
 
 // ── Multi Class Student ─────────────────────────────────────────────────────────
 export function MultiClass() {

@@ -16,22 +16,38 @@ const cache = new Map();
 
 export function invalidate(key) { cache.delete(key); }
 
+// The dashboard renders from the localStorage session immediately, but Firebase Auth
+// restores its login asynchronously after a page load. Reads sent before that go out
+// unauthenticated and the erp_* rules refuse them — which looked like "no data".
+// Every call waits for Auth first, and a missing/expired login gets a clear error.
+export class SessionError extends Error {}
+export async function ready() {
+  await auth.authStateReady();
+  if (!auth.currentUser) throw new SessionError("Your session has expired — please log out and sign in again.");
+}
+function explain(e) {
+  if (e instanceof SessionError) return e;
+  if (e?.code === "permission-denied") return new Error("Permission denied — this account is not a Super Admin, or the database rules are out of date.");
+  return e;
+}
+async function guarded(fn) {
+  await ready();
+  try { return await fn(); } catch (e) { throw explain(e); }
+}
+
 export async function listAll(key, { force = false } = {}) {
   if (!force && cache.has(key)) return cache.get(key);
-  const snap = await getDocs(collection(db, col(key)));
-  const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const rows = await guarded(async () => (await getDocs(collection(db, col(key)))).docs.map(d => ({ id: d.id, ...d.data() })));
   cache.set(key, rows);
   return rows;
 }
 
 export async function listWhere(key, field, op, value) {
-  const snap = await getDocs(query(collection(db, col(key)), where(field, op, value)));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return guarded(async () => (await getDocs(query(collection(db, col(key)), where(field, op, value)))).docs.map(d => ({ id: d.id, ...d.data() })));
 }
 
 export async function getOne(key, id) {
-  const snap = await getDoc(doc(db, col(key), id));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  return guarded(async () => { const snap = await getDoc(doc(db, col(key), id)); return snap.exists() ? { id: snap.id, ...snap.data() } : null; });
 }
 
 // Audit trail (legacy "Audit Trail Report"): every insert/update/delete made through
@@ -51,33 +67,34 @@ function audit(action, key, id) {
 
 export async function createRow(key, data) {
   invalidate(key);
-  const res = await addDoc(collection(db, col(key)), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  const res = await guarded(() => addDoc(collection(db, col(key)), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }));
   audit("Insert", key, res.id);
   return res.id;
 }
 
 export async function setRow(key, id, data, { merge = true } = {}) {
   invalidate(key);
-  await setDoc(doc(db, col(key), id), { ...data, updatedAt: serverTimestamp() }, { merge });
+  await guarded(() => setDoc(doc(db, col(key), id), { ...data, updatedAt: serverTimestamp() }, { merge }));
   audit("Update", key, id);
   return id;
 }
 
 export async function updateRow(key, id, data) {
   invalidate(key);
-  await updateDoc(doc(db, col(key), id), { ...data, updatedAt: serverTimestamp() });
+  await guarded(() => updateDoc(doc(db, col(key), id), { ...data, updatedAt: serverTimestamp() }));
   audit("Update", key, id);
 }
 
 export async function deleteRow(key, id) {
   invalidate(key);
-  await deleteDoc(doc(db, col(key), id));
+  await guarded(() => deleteDoc(doc(db, col(key), id)));
   audit("Delete", key, id);
 }
 
 /** Writes many docs with fixed ids in chunks of 400 (Firestore batch limit is 500). */
 export async function bulkSet(key, rows, onProgress) {
   invalidate(key);
+  await ready();
   for (let i = 0; i < rows.length; i += 400) {
     const batch = writeBatch(db);
     for (const { id, ...data } of rows.slice(i, i + 400)) {
@@ -90,6 +107,7 @@ export async function bulkSet(key, rows, onProgress) {
 
 export async function bulkDelete(key, ids) {
   invalidate(key);
+  await ready();
   for (let i = 0; i < ids.length; i += 400) {
     const batch = writeBatch(db);
     for (const id of ids.slice(i, i + 400)) batch.delete(doc(db, col(key), id));
@@ -99,12 +117,11 @@ export async function bulkDelete(key, ids) {
 
 // Settings singletons live in erp_settings/{key}.
 export async function getSettings(key) {
-  const snap = await getDoc(doc(db, col("settings"), key));
-  return snap.exists() ? snap.data() : {};
+  return guarded(async () => { const snap = await getDoc(doc(db, col("settings"), key)); return snap.exists() ? snap.data() : {}; });
 }
 
 export async function saveSettings(key, data) {
-  await setDoc(doc(db, col("settings"), key), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+  await guarded(() => setDoc(doc(db, col("settings"), key), { ...data, updatedAt: serverTimestamp() }, { merge: true }));
 }
 
 const MAX_UPLOAD = 10 * 1024 * 1024;
@@ -114,6 +131,7 @@ export async function uploadErpFile(folder, file) {
   if (file.size > MAX_UPLOAD) throw new Error("File must be smaller than 10MB.");
   const safeName = file.name.replace(/[^\w.\-]+/g, "_");
   const path = `erp/${folder}/${Date.now()}-${safeName}`;
+  await ready();
   const r = sref(storage, path);
   await uploadBytes(r, file, { contentType: file.type || "application/octet-stream" });
   return { url: await getDownloadURL(r), name: file.name, path };

@@ -404,7 +404,7 @@ export const STUDENT_FIELD_GROUPS = [
     sel("gender", "Gender", GENDER, { required: true }), date("dob", "Date Of Birth", { required: true }),
     ref("categoryId", "Category", "categories"), t("religion", "Religion"), t("caste", "Caste"),
     t("mobile", "Mobile Number"), t("email", "Email"), t("passportNo", "Passport / ID No (TC)"),
-    t("nationality", "Nationality"), date("admissionDate", "Admission Date"), image("photo", "Student Photo"),
+    { key: "nationality", label: "Nationality", type: "country" }, date("admissionDate", "Admission Date"), image("photo", "Student Photo"),
     sel("bloodGroup", "Blood Group", ["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-"]), ref("houseId", "House", "houses"),
     t("height", "Height"), t("weight", "Weight"), date("measurementDate", "Measurement Date"),
   ] },
@@ -414,6 +414,7 @@ export const STUDENT_FIELD_GROUPS = [
     sel("guardianIs", "If Guardian Is", ["Father", "Mother", "Other"]), t("guardianName", "Guardian Name"),
     t("guardianRelation", "Guardian Relation"), t("guardianPhone", "Guardian Phone"), t("guardianEmail", "Guardian Email"),
     ta("guardianAddress", "Guardian Address"),
+    image("fatherPhoto", "Father Photo"), image("motherPhoto", "Mother Photo"), image("guardianPhoto", "Guardian Photo"),
   ] },
   { title: "Student Address Details", fields: [ta("currentAddress", "Current Address"), ta("permanentAddress", "Permanent Address")] },
   { title: "Miscellaneous Details", fields: [
