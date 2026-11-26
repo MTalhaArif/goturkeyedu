@@ -3,14 +3,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ENTITIES } from "@/lib/erp/schema";
-import { listAll, createRow, updateRow, deleteRow } from "@/lib/erp/data";
+import { listAll, createRow, updateRow, deleteRow, bulkDelete } from "@/lib/erp/data";
 import { Card, Btn, Modal, Table, SchemaForm, useRefOptions, displayValue, missingRequired, exportCsv, printHtml, inputStyle, C } from "./ui";
 import { esc } from "@/lib/erp/templating";
 
 const PAGE = 50;
 
-export default function CrudTable({ entityKey, presetFilter, title: titleOverride }) {
+// `filter` ({ field: value }) makes this tab a filtered view of the collection (e.g.
+// Disabled Staff, Assignments); records added from it get those values preset.
+// A missing value counts as "active" so records saved before a status existed still show.
+export default function CrudTable({ entityKey, filter, title: titleOverride }) {
   const def = ENTITIES[entityKey];
+  const presetFilter = filter ? r => Object.entries(filter).every(([k, v]) => r[k] === v || (v === "active" && !r[k])) : null;
+  const [selected, setSelected] = useState(new Set());
+  const [importing, setImporting] = useState(false);
   const [rows, setRows] = useState(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -46,7 +52,40 @@ export default function CrudTable({ entityKey, presetFilter, title: titleOverrid
       .filter(r => Object.entries(filters).every(([k, v]) => !v || r[k] === v))
       .filter(r => !q || def.fields.some(f => String(displayValue(f, r[f.key], refOptions) ?? "").toLocaleLowerCase("tr").includes(q)))
       .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-  }, [rows, search, filters, refOptions, presetFilter]);
+  }, [rows, search, filters, refOptions, filter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const bulkRemove = async () => {
+    if (!selected.size || !confirm(`Delete ${selected.size} selected record(s)? This cannot be undone.`)) return;
+    try { await bulkDelete(entityKey, [...selected]); setSelected(new Set()); await load(); } catch (e) { alert(e.message); }
+  };
+
+  // CSV import: header row may use field labels or keys; ref columns may hold the
+  // referenced record's name — it is resolved to its id.
+  const importCsv = async file => {
+    if (!file) return;
+    setImporting(true);
+    try {
+      const table = parseCsv(await file.text());
+      const [head, ...lines] = table;
+      const fieldFor = h => def.fields.find(f => f.key.toLowerCase() === h.trim().toLowerCase() || f.label.toLowerCase() === h.trim().toLowerCase());
+      const cols = head.map(fieldFor);
+      let n = 0;
+      for (const line of lines) {
+        if (!line.some(c => c.trim())) continue;
+        const values = { ...(filter || {}) };
+        cols.forEach((f, i) => {
+          if (!f) return;
+          let v = (line[i] ?? "").trim();
+          if (f.type === "ref") v = (refOptions[f.collection] || []).find(r => [r.id, r[f.labelField], r.name, r.title].includes(v))?.id || v;
+          if (["number", "money"].includes(f.type)) v = v === "" ? "" : Number(v.replace(",", "."));
+          if (f.type === "checkbox") v = /^(1|true|yes|evet|✔)$/i.test(v);
+          values[f.key] = v;
+        });
+        await createRow(entityKey, values); n++;
+      }
+      alert(`Imported ${n} record(s).`); await load();
+    } catch (e) { alert(`Import failed: ${e.message}`); } finally { setImporting(false); }
+  };
 
   const pageRows = filtered.slice(page * PAGE, (page + 1) * PAGE);
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
@@ -68,6 +107,7 @@ export default function CrudTable({ entityKey, presetFilter, title: titleOverrid
   };
 
   const columns = [
+    ...(def.readOnly ? [] : [{ label: <input type="checkbox" aria-label="Select all" checked={pageRows.length > 0 && pageRows.every(r => selected.has(r.id))} onChange={e => setSelected(p => { const s = new Set(p); pageRows.forEach(r => e.target.checked ? s.add(r.id) : s.delete(r.id)); return s; })} />, render: r => <input type="checkbox" aria-label="Select" checked={selected.has(r.id)} onChange={() => setSelected(p => { const s = new Set(p); s.has(r.id) ? s.delete(r.id) : s.add(r.id); return s; })} />, text: () => "" }]),
     ...listFields.map(f => ({ label: f.label, render: r => displayValue(f, r[f.key], refOptions), text: r => { const v = displayValue(f, r[f.key], refOptions); return typeof v === "string" ? v : r[f.key]?.url || ""; } })),
     { label: "Action", render: r => (
       <div style={{ display: "flex", gap: 6 }}>
@@ -87,8 +127,10 @@ export default function CrudTable({ entityKey, presetFilter, title: titleOverrid
   return (
     <>
       <Card title={`${titleOverride || def.title} List`} actions={<>
-        {!def.readOnly && <Btn onClick={() => setEditing({ values: {} })}>+ Add</Btn>}
-        <Btn kind="ghost" onClick={() => exportCsv(`${entityKey}.csv`, columns.slice(0, -1), filtered)}>⬇ CSV</Btn>
+        {!def.readOnly && <Btn onClick={() => setEditing({ values: { ...(filter || {}) } })}>+ Add</Btn>}
+        {!def.readOnly && selected.size > 0 && <Btn kind="danger" onClick={bulkRemove}>🗑 Bulk Delete ({selected.size})</Btn>}
+        {!def.readOnly && <label style={{ display: "inline-flex" }}><span style={{ padding: "9px 18px", borderRadius: 8, border: `1px solid ${C.line}`, fontWeight: 600, fontSize: 14, cursor: "pointer", background: "white" }}>{importing ? "Importing…" : "⬆ Import CSV"}</span><input type="file" accept=".csv,text/csv" hidden disabled={importing} onChange={e => { importCsv(e.target.files?.[0]); e.target.value = ""; }} /></label>}
+        <Btn kind="ghost" onClick={() => exportCsv(`${entityKey}.csv`, columns.filter(c => c.label !== "Action" && typeof c.label === "string"), filtered)}>⬇ CSV</Btn>
         <Btn kind="ghost" onClick={printList}>🖨 Print</Btn>
       </>}>
         <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
@@ -137,6 +179,22 @@ export default function CrudTable({ entityKey, presetFilter, title: titleOverrid
       )}
     </>
   );
+}
+
+// Minimal RFC-4180 CSV parser (quoted fields, escaped quotes, CRLF, BOM).
+function parseCsv(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  const s = text.replace(/^﻿/, "");
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (q) { if (c === '"' && s[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === "," || c === ";") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (c !== "\r") cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
 }
 
 function stripMeta(r) {

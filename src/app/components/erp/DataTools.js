@@ -101,6 +101,23 @@ async function importData(data, fileMap, setLog) {
   say("Import complete.");
 }
 
+// Legacy "System Update" downloaded new Smart School versions in place. Here the app
+// is deployed from Git (GitHub → Vercel), so this screen explains that and shows the
+// running build.
+export function SystemUpdate() {
+  const build = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA;
+  return (
+    <Card title="System Update">
+      <p style={{ fontSize: 14, marginTop: 0 }}>This portal updates automatically: every change merged into the <code>main</code> branch on GitHub is built and deployed by Vercel. There is nothing to download or install here.</p>
+      <table style={{ fontSize: 14 }}><tbody>
+        <tr><td style={{ color: C.muted, paddingRight: 16 }}>Running build</td><td><code>{build ? build.slice(0, 7) : "local / unknown"}</code></td></tr>
+        <tr><td style={{ color: C.muted, paddingRight: 16 }}>Environment</td><td>{process.env.NEXT_PUBLIC_VERCEL_ENV || "development"}</td></tr>
+      </tbody></table>
+      <p style={{ fontSize: 13, color: C.muted }}>Database rules (firestore.rules / storage.rules) are deployed separately with <code>npx firebase-tools deploy --only firestore:rules,storage</code>.</p>
+    </Card>
+  );
+}
+
 export function LegacyImport() {
   const [importFile, setImportFile] = useState(null);
   const [files, setFiles] = useState([]);

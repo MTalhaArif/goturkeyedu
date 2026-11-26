@@ -7,7 +7,7 @@ import {
   query, where, writeBatch, serverTimestamp,
 } from "firebase/firestore";
 import { ref as sref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db, storage, auth } from "@/lib/firebase";
 import { col } from "./schema";
 
 // Small in-memory cache so ref dropdowns and label lookups don't refetch the same
@@ -34,26 +34,45 @@ export async function getOne(key, id) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
+// Audit trail (legacy "Audit Trail Report"): every insert/update/delete made through
+// the ERP is recorded in erp_audit_log. Best-effort — never blocks or fails the write.
+const NOT_AUDITED = new Set(["audit_log", "user_log", "settings"]);
+function audit(action, key, id) {
+  if (NOT_AUDITED.has(key)) return;
+  const user = auth.currentUser?.email || "unknown";
+  const verb = { Insert: "New Record inserted On", Update: "Record updated On", Delete: "Record deleted On" }[action];
+  addDoc(collection(db, col("audit_log")), {
+    message: `${verb} ${key.replace(/_/g, " ")} id ${id}`, user, action,
+    platform: typeof navigator !== "undefined" ? navigator.platform : "", agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 160) : "",
+    at: new Date().toLocaleString("tr-TR"), createdAt: serverTimestamp(),
+  }).catch(() => {});
+  invalidate("audit_log");
+}
+
 export async function createRow(key, data) {
   invalidate(key);
   const res = await addDoc(collection(db, col(key)), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  audit("Insert", key, res.id);
   return res.id;
 }
 
 export async function setRow(key, id, data, { merge = true } = {}) {
   invalidate(key);
   await setDoc(doc(db, col(key), id), { ...data, updatedAt: serverTimestamp() }, { merge });
+  audit("Update", key, id);
   return id;
 }
 
 export async function updateRow(key, id, data) {
   invalidate(key);
   await updateDoc(doc(db, col(key), id), { ...data, updatedAt: serverTimestamp() });
+  audit("Update", key, id);
 }
 
 export async function deleteRow(key, id) {
   invalidate(key);
   await deleteDoc(doc(db, col(key), id));
+  audit("Delete", key, id);
 }
 
 /** Writes many docs with fixed ids in chunks of 400 (Firestore batch limit is 500). */

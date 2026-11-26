@@ -173,9 +173,17 @@ function feePageStudent(v) {
   return cands.find(s => norm(s.fullName) === norm(name)) || (cands.length === 1 ? cands[0] : null);
 }
 const seenFeePages = new Set();
+const hasFeeData = v => (v.tables || []).some(t => t.headers.includes("fees_group") && t.rows.some(r => r[4] && r[4] !== "grand_total"));
 for (const [, v] of [...pagesOf("student_fees"), ...pagesOf("student_fees_scan")]) {
-  const st = feePageStudent(v); if (!st) continue;
   const feeId = Array.isArray(v.id) ? v.id[1] : v.id;
+  let st = feePageStudent(v);
+  // Fee records whose student was deleted on the legacy site (blank student header):
+  // keep the payment history under a clearly labelled, disabled placeholder student.
+  if (!st && hasFeeData(v)) {
+    st = { id: `sfee${feeId}`, legacyId: `fee-session-${feeId}`, admissionNo: "", firstName: "Unlinked legacy fee record", lastName: `#${feeId}`, fullName: `Unlinked legacy fee record #${feeId}`, status: "disabled", disableNote: "Student was deleted on the legacy site; fee history kept for finance reports.", importedAt: now };
+    students.push(st);
+  }
+  if (!st) continue;
   if (seenFeePages.has(String(feeId))) continue; seenFeePages.add(String(feeId));
   const t = (v.tables || []).find(t => t.headers.includes("fees_group"));
   let line = null;
@@ -183,13 +191,21 @@ for (const [, v] of [...pagesOf("student_fees"), ...pagesOf("student_fees_scan")
     const [, group, code, due, status, amount, payId, mode, date, discount, fine, paid] = r;
     if (status === "grand_total" || (!group && !payId)) continue;
     if (group) {
-      line = { id: `sf${st.legacyId}_${feeLines.length}`, studentId: st.id, feeGroupId: feeGroupByName[group] || "", feeTypeId: feeTypeByCode[code] || "", title: feeGroupByName[group] ? "" : group, amount: money(amount), dueDate: isoDate(due), legacyStatus: status };
+      const groupName = group.replace(/\s*\([^)]*\)\s*$/, "").trim(); // "Group (Type)" → "Group"
+      line = { id: `sf${st.legacyId}_${feeLines.length}`, studentId: st.id, feeGroupId: feeGroupByName[groupName] || "", feeTypeId: feeTypeByCode[code] || "", title: feeGroupByName[groupName] ? "" : group, amount: money(String(amount).split("+")[0]), fineAmount: money(String(amount).split("+")[1]), dueDate: isoDate(due), legacyStatus: status };
       feeLines.push(line);
     }
     if (payId && line) payments.push({ id: `fp${st.legacyId}_${payments.length}`, studentId: st.id, studentFeeId: line.id, receiptNo: payId, mode: mode || "", date: isoDate(date), amount: money(paid), discount: money(discount), fine: money(fine) });
   }
 }
-function money(s) { return Number(String(s || "").replace(/[^\d.,-]/g, "").replace(/\.(?=.*\.)/g, "").replace(",", ".")) || 0; }
+// "₺1,771.52" / "271.52" / "1.771,52" → number (first number in the string).
+function money(s) {
+  const m = String(s || "").match(/-?[\d.,]+/); if (!m) return 0;
+  let v = m[0];
+  if (/,\d{1,2}$/.test(v)) v = v.replace(/\./g, "").replace(",", "."); else v = v.replace(/,/g, "");
+  return Number(v) || 0;
+}
+put("students", students.filter(s => s.id.startsWith("sfee"))); // placeholders created above
 put("student_fees", feeLines);
 put("fee_payments", payments);
 
@@ -391,6 +407,38 @@ out.settings.fees_reminder = { before1: true, before1Days: Number(fr.days1) || 0
 const ns = form0(ex["/admin/notification/setting"]).values; const nt = (ex["/admin/notification/setting"]?.tables || [])[0];
 out.settings.notification = { templates: (nt?.rows || []).map((r, i) => `${r[0]} [${ns[`mail_${i + 1}`] === "1" ? "email on" : "email off"}]: ${r[3] || ""}`).join("\n\n"), studentAdmissionEmail: ns.mail_1 === "1", feesSubmissionEmail: ns.mail_2 === "1" };
 out.settings.student_profile_update = { allowEdit: form0(ex["/student/profilesetting"]).values.student_profile_edit === "1" };
+
+// ── AJAX-loaded lists (fetch_lists.py → <full>/lists/*.json) ───────────────────
+const listFile = name => { const f = path.join(FULL, "lists", `${name}.json`); try { return JSON.parse(fs.readFileSync(f, "utf8")).data || []; } catch { return []; } };
+const cellText = c => text(String(c ?? "").replace(/<a [^>]*>Read more\.\.\.<\/a>/g, ""));
+const subjectByName = Object.fromEntries((out.collections.subjects || []).map(s => [s.name, s.id]));
+const classByName = Object.fromEntries((out.collections.classes || []).map(c => [c.name, c.id]));
+const sectionByName2 = Object.fromEntries((out.collections.sections || []).map(s => [s.name, s.id]));
+const dmyTime = s => { const m = String(s || "").match(/(\d{2})\.(\d{2})\.(\d{4})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : ""; };
+
+put("online_exams", listFile("admin_onlineexam_getexamlist").map((r, i) => {
+  const parts = String(r[0] || "").split(/<[^>]+>/).map(s => decode(s).trim()).filter(Boolean);
+  return { id: `oe${i + 1}`, title: parts[0] || "", description: parts.slice(1).join(" "), quizType: /yes/i.test(cellText(r[1])) ? "Quiz" : "Exam",
+    from: dmyTime(r[4]), to: dmyTime(r[5]), fromText: cellText(r[4]), toText: cellText(r[5]), duration: cellText(r[6]), attempts: Number(cellText(r[3])) || 0,
+    published: /yes/i.test(cellText(r[7])), publishResult: /yes/i.test(cellText(r[8])), questionsSummary: cellText(r[2]) };
+}));
+put("questions", listFile("admin_question_getDatatable").map(r => {
+  const qid = cellText(r[1]);
+  const f = path.join(FULL, "lists", `question_${qid}.html`);
+  const page = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+  const full = (page.match(/<div class="questiondetail"><b>Question:<\/b>([\s\S]*?)<\/div>/) || [])[1];
+  const cls = text((page.match(/<b>class\s*<\/b>\s*:([^<]*)/) || [])[1]);
+  return { id: `q${qid}`, legacyId: qid, subjectId: subjectByName[cellText(r[2])] || "", subjectText: cellText(r[2]), questionType: cellText(r[3]), level: cellText(r[4]),
+    classId: classByName[cls] || "", question: (full || String(r[5] || "").replace(/<a [^>]*>Read more\.\.\.<\/a>/g, "")).trim() };
+}));
+put("lessons", listFile("admin_lessonplan_getlessonlist").map((r, i) => ({ id: `les${i + 1}`, classId: classByName[cellText(r[0])] || "", sectionId: sectionByName2[cellText(r[1])] || "", subjectId: subjectByName[cellText(r[3])] || "", subjectGroup: cellText(r[2]), name: cellText(r[4]) })));
+put("topics", listFile("admin_lessonplan_gettopiclist").map((r, i) => ({ id: `top${i + 1}`, lessonId: (out.collections.lessons.find(l => l.name === cellText(r[4])) || {}).id || "", name: cellText(r[5]), status: "Incomplete" })));
+put("income", listFile("admin_income_getincomelist").map((r, i) => ({ id: `inc${i + 1}`, name: cellText(r[0]), invoiceNo: cellText(r[2] ?? ""), date: dmyTime(cellText(r[3] ?? "")), amount: money(cellText(r[4] ?? "")), legacyRow: r.map(cellText) })));
+put("expenses", listFile("admin_expense_getexpenselist").map((r, i) => ({ id: `exp${i + 1}`, name: cellText(r[0]), invoiceNo: cellText(r[2] ?? ""), date: dmyTime(cellText(r[3] ?? "")), amount: money(cellText(r[4] ?? "")), legacyRow: r.map(cellText) })));
+put("phone_calls", listFile("admin_generalcall_getcalllist").map((r, i) => ({ id: `call${i + 1}`, name: cellText(r[0]), phone: cellText(r[1]), date: dmyTime(cellText(r[2])), followUpDate: dmyTime(cellText(r[3])), callType: cellText(r[4]), legacyRow: r.map(cellText) })));
+put("online_admissions", listFile("admin_onlinestudent_getstudentlist").map((r, i) => ({ id: `oa${i + 1}`, referenceNo: cellText(r[0]), firstName: cellText(r[1]), legacyRow: r.map(cellText) })));
+put("user_log", listFile("admin_userlog_getDatatable").map((r, i) => ({ id: `ul${i + 1}`, user: cellText(r[0]), role: cellText(r[1]), classSection: cellText(r[2]), ip: cellText(r[3]), loginAt: cellText(r[4]), userAgent: cellText(r[5]) })));
+put("audit_log", listFile("admin_audit_getDatatable").map((r, i) => ({ id: `au${i + 1}`, message: cellText(r[0]), user: cellText(r[1]), ip: cellText(r[2]), action: cellText(r[3]), platform: cellText(r[4]), agent: cellText(r[5]), at: cellText(r[6]) })));
 
 // ── Write ───────────────────────────────────────────────────────────────────────
 const dest = path.join(FULL, "..", "legacy-import.json");

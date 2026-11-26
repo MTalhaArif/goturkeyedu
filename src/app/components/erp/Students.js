@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { STUDENT_FIELD_GROUPS, STUDENT_FIELDS } from "@/lib/erp/schema";
-import { listAll, createRow, updateRow, deleteRow, bulkDelete, listWhere, fullName } from "@/lib/erp/data";
+import { listAll, createRow, updateRow, deleteRow, bulkDelete, listWhere, fullName, getSettings } from "@/lib/erp/data";
 import { Card, Btn, Badge, Modal, Table, Grid, Field, FieldInput, useRefOptions, displayValue, missingRequired, exportCsv, inputStyle, fmtDate, C } from "./ui";
 import { StudentFeesPanel } from "./Fees";
 import { StudentDocumentsPanel } from "./Documents";
@@ -93,6 +93,43 @@ export function StudentList({ disabledOnly = false }) {
 
 export const DisabledStudents = () => <StudentList disabledOnly />;
 
+// ── All Students (legacy student/searchAll: every student with total Paid) ──────
+export function AllStudents() {
+  const [students] = useStudents();
+  const opts = useRefOptions(STUDENT_FIELDS);
+  const [paid, setPaid] = useState({});
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(null);
+  useEffect(() => {
+    listAll("fee_payments", { force: true })
+      .then(ps => setPaid(ps.reduce((m, p) => { m[p.studentId] = (m[p.studentId] || 0) + (Number(p.amount) || 0); return m; }, {})))
+      .catch(() => {});
+  }, []);
+  const rows = (students || [])
+    .filter(s => { const k = q.trim().toLocaleLowerCase("tr"); return !k || [fullName(s), s.admissionNo, s.mobile, s.passportNo].some(v => String(v || "").toLocaleLowerCase("tr").includes(k)); })
+    .sort((a, b) => String(b.admissionNo || "").localeCompare(String(a.admissionNo || ""), undefined, { numeric: true }));
+  const columns = [
+    { label: "Admission No", key: "admissionNo" },
+    { label: "Student Name", render: s => <a href="#" onClick={e => { e.preventDefault(); setOpen(s); }} style={{ color: C.info, fontWeight: 600 }}>{fullName(s)}</a>, text: s => fullName(s) },
+    { label: "Class", render: s => nameOf(opts, "classes", s.classId), text: s => nameOf(opts, "classes", s.classId) },
+    { label: "Date Of Birth", render: s => fmtDate(s.dob), text: s => s.dob },
+    { label: "Gender", key: "gender" }, { label: "Mobile Number", key: "mobile" },
+    { label: "Paid", render: s => <span style={{ fontWeight: 600 }}>{paid[s.id] || 0}</span>, text: s => paid[s.id] || 0, style: { background: "rgba(239,68,68,0.06)" } },
+    { label: "Status", render: s => s.status === "disabled" ? <Badge color="#dc2626">Disabled</Badge> : <Badge>Active</Badge>, text: s => s.status || "active" },
+  ];
+  return (
+    <>
+      <Card title={`All Students (${rows.length})`} actions={<>
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search…" style={{ ...inputStyle, maxWidth: 260 }} />
+        <Btn kind="ghost" onClick={() => exportCsv("all-students.csv", columns, rows)}>⬇ CSV</Btn>
+      </>}>
+        <Table columns={columns} rows={rows.slice(0, 1000)} empty={students ? "No students." : "Loading…"} />
+      </Card>
+      {open && <StudentProfile student={open} opts={opts} onClose={() => setOpen(null)} onChanged={() => setOpen(null)} onEdit={() => setOpen(null)} />}
+    </>
+  );
+}
+
 // ── Admission / edit form ──────────────────────────────────────────────────────
 function StudentForm({ initial, opts, onClose, onSaved, inline }) {
   const [values, setValues] = useState(() => initial ? strip(initial) : { admissionDate: new Date().toISOString().slice(0, 10), status: "active", rte: "No" });
@@ -100,8 +137,16 @@ function StudentForm({ initial, opts, onClose, onSaved, inline }) {
 
   useEffect(() => {
     if (initial || values.admissionNo) return;
-    // Next admission number = highest numeric admission no + 1 (legacy numbering continues).
-    listAll("students").then(all => {
+    // Auto admission no (General Settings: prefix + zero-padded number from "start"),
+    // else continue the legacy numbering: highest numeric admission no + 1.
+    Promise.all([listAll("students"), getSettings("general").catch(() => ({}))]).then(([all, g]) => {
+      if (g.autoAdmissionNo) {
+        const prefix = String(g.admissionNoPrefix || ""), digits = Number(g.admissionNoDigits) || 0;
+        const used = all.map(s => String(s.admissionNo || "")).filter(a => a.startsWith(prefix)).map(a => Number(a.slice(prefix.length)) || 0);
+        const next = Math.max(Number(g.admissionNoStart) || 1, ...used.map(u => u + 1));
+        setValues(v => ({ ...v, admissionNo: prefix + String(next).padStart(digits, "0") }));
+        return;
+      }
       const max = all.reduce((m, s) => Math.max(m, Number(String(s.admissionNo || "").replace(/\D/g, "")) || 0), 0);
       setValues(v => ({ ...v, admissionNo: String(max + 1) }));
     }).catch(() => {});
@@ -153,7 +198,7 @@ export function StudentAdmission() {
 function strip(r) { const { id, createdAt, updatedAt, ...rest } = r; return rest; }
 
 // ── Profile (tabs: Profile, Fees, Documents, Uploads, Timeline) ────────────────
-function StudentProfile({ student, opts, onClose, onChanged, onEdit }) {
+export function StudentProfile({ student, opts, onClose, onChanged, onEdit }) {
   const [tab, setTab] = useState("profile");
   const [s, setS] = useState(student);
   const [disableOpen, setDisableOpen] = useState(false);

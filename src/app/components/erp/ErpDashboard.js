@@ -1,14 +1,23 @@
 "use client";
 // Super Admin home: live figures from the ERP collections (replaces the mock widgets).
 import { useEffect, useState } from "react";
-import { listAll, fullName } from "@/lib/erp/data";
-import { DOCUMENT_TYPES } from "@/lib/erp/schema";
-import { Card, Table, money, fmtDate, C } from "./ui";
+import { listAll, fullName, getSettings } from "@/lib/erp/data";
+import { DOCUMENT_TYPES, STUDENT_FIELDS } from "@/lib/erp/schema";
+import { Card, Table, money, fmtDate, useRefOptions, C } from "./ui";
+import { StudentProfile } from "./Students";
 import { computeLines } from "./Fees";
 
 export default function ErpDashboard() {
   const [d, setD] = useState(null);
   const [err, setErr] = useState("");
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(null);
+  const [session, setSession] = useState("");
+  const opts = useRefOptions(STUDENT_FIELDS);
+  useEffect(() => {
+    Promise.all([getSettings("general").catch(() => ({})), listAll("sessions").catch(() => [])])
+      .then(([g, ss]) => setSession(ss.find(s => s.id === g.sessionId)?.name || ss.find(s => s.active)?.name || ""));
+  }, []);
   useEffect(() => {
     Promise.all(["students", "documents", "fee_payments", "student_fees", "visitors", "enquiries"].map(k => listAll(k).catch(e => { setErr(e.code === "permission-denied" ? "ERP data is not readable yet — deploy the updated firestore.rules." : e.message); return []; })))
       .then(([students, documents, payments, lines, visitors, enquiries]) => setD({ students, documents, payments, lines, visitors, enquiries }));
@@ -27,11 +36,29 @@ export default function ErpDashboard() {
     { icon: "🚪", label: "Visitors This Month", value: d.visitors.filter(v => String(v.date || "").startsWith(month)).length, color: C.muted },
     { icon: "📈", label: "Active Enquiries", value: d.enquiries.filter(e => !e.status || e.status === "active").length, color: C.ok },
   ];
+  const q = search.trim().toLocaleLowerCase("tr");
+  const matches = q.length < 2 ? [] : d.students.filter(s => [fullName(s), s.admissionNo, s.passportNo, s.mobile, s.email, s.rollNo, s.nationalId].some(v => String(v || "").toLocaleLowerCase("tr").includes(q))).slice(0, 20);
   const recent = [...d.documents].sort((a, b) => String(b.issuedAt || "").localeCompare(String(a.issuedAt || ""))).slice(0, 10);
   const byId = Object.fromEntries(d.students.map(s => [s.id, s]));
   return (
     <div style={{ animation: "fadeIn 0.3s" }}>
       {err && <Card style={{ borderColor: "#fecaca", color: "#b91c1c" }}>{err}</Card>}
+      <Card style={{ padding: 16 }}>
+        <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 700, color: C.ink }}>Current Session: {session || "—"}</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search By Student Name, Roll Number, Admission No, Passport, Phone…" style={{ flex: 1, minWidth: 260, padding: "10px 14px", borderRadius: 999, border: `1px solid ${C.line}`, outline: "none" }} />
+        </div>
+        {matches.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <Table columns={[
+              { label: "Admission No", render: s => s.admissionNo }, { label: "Student Name", render: s => <a href="#" onClick={e => { e.preventDefault(); setOpen(s); }} style={{ color: C.info, fontWeight: 600 }}>{fullName(s)}</a> },
+              { label: "Class", render: s => opts.classes?.find(c => c.id === s.classId)?.name || "" }, { label: "Mobile", render: s => s.mobile }, { label: "Passport", render: s => s.passportNo },
+            ]} rows={matches} />
+          </div>
+        )}
+        {q.length >= 2 && matches.length === 0 && <div style={{ marginTop: 10, color: C.muted, fontSize: 13 }}>No student found.</div>}
+      </Card>
+      {open && <StudentProfile student={open} opts={opts} onClose={() => setOpen(null)} onChanged={() => setOpen(null)} onEdit={() => setOpen(null)} />}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 20, marginBottom: 24 }}>
         {tiles.map(t => (
           <div key={t.label} style={{ background: "white", borderRadius: 20, padding: 20, boxShadow: "0 4px 20px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9", display: "flex", alignItems: "center", gap: 16 }}>

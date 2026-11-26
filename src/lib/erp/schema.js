@@ -74,10 +74,12 @@ export const ENTITIES = {
   online_exams: { title: "Online Exam", fields: [t("title", "Exam", { required: true }), sel("quizType", "Quiz", ["Exam", "Quiz"]), date("from", "Exam From"), date("to", "Exam To"), time("duration", "Duration"), num("attempts", "Attempt"), num("passingPercentage", "Passing Percentage"), chk("published", "Publish Exam"), chk("publishResult", "Publish Result"), html("description", "Description")], list: ["title", "quizType", "from", "to", "attempts", "published"] },
   questions: { title: "Question Bank", fields: [ref("subjectId", "Subject", "subjects"), sel("questionType", "Question Type", ["Single Choice", "Multiple Choice", "True/False", "Descriptive"]), sel("level", "Question Level", ["Low", "Medium", "High"]), ref("classId", "Class", "classes"), ref("sectionId", "Section", "sections"), html("question", "Question", { required: true }), t("optA", "Option A"), t("optB", "Option B"), t("optC", "Option C"), t("optD", "Option D"), t("optE", "Option E"), t("answer", "Answer")], list: ["subjectId", "questionType", "level", "question"] },
 
+  online_exam_results: { title: "Online Exam Result", fields: [ref("onlineExamId", "Exam", "online_exams", "title", { required: true }), ref("studentId", "Student", "students", "fullName", { required: true }), date("attemptDate", "Attempt Date"), num("attempt", "Attempt No"), num("totalQuestions", "Total Questions"), num("correct", "Correct Answers"), num("score", "Score (%)"), sel("result", "Result", ["Pass", "Fail", "Pending Evaluation"]), ta("remark", "Remark")], list: ["onlineExamId", "studentId", "attemptDate", "score", "result"] },
+
   // Lesson plan
   lessons: { title: "Lesson", fields: [ref("classId", "Class", "classes"), ref("sectionId", "Section", "sections"), ref("subjectId", "Subject", "subjects"), t("name", "Lesson Name", { required: true })], list: ["classId", "sectionId", "subjectId", "name"] },
   topics: { title: "Topic", fields: [ref("lessonId", "Lesson", "lessons", "name", { required: true }), t("name", "Topic Name", { required: true }), sel("status", "Status", ["Incomplete", "Complete"]), date("completeDate", "Complete Date")], list: ["lessonId", "name", "status", "completeDate"] },
-  syllabus: { title: "Manage Lesson Plan", fields: [ref("topicId", "Topic", "topics", "name", { required: true }), date("date", "Date"), time("from", "Time From"), time("to", "Time To"), t("subTopic", "Sub Topic"), t("lectureYoutubeUrl", "Lecture Youtube URL"), file("lectureVideo", "Lecture Video"), file("attachment", "Attachment"), ta("teachingMethod", "Teaching Method"), ta("generalObjectives", "General Objectives"), ta("previousKnowledge", "Previous Knowledge"), ta("comprehensiveQuestions", "Comprehensive Questions"), html("presentation", "Presentation")], list: ["topicId", "date", "from", "to", "subTopic"] },
+  syllabus: { title: "Manage Lesson Plan", fields: [ref("staffId", "Teacher", "staff", "name"), ref("topicId", "Topic", "topics", "name", { required: true }), date("date", "Date"), time("from", "Time From"), time("to", "Time To"), t("subTopic", "Sub Topic"), t("lectureYoutubeUrl", "Lecture Youtube URL"), file("lectureVideo", "Lecture Video"), file("attachment", "Attachment"), ta("teachingMethod", "Teaching Method"), ta("generalObjectives", "General Objectives"), ta("previousKnowledge", "Previous Knowledge"), ta("comprehensiveQuestions", "Comprehensive Questions"), html("presentation", "Presentation")], list: ["staffId", "topicId", "date", "from", "to", "subTopic"] },
 
   // Academics
   classes: { title: "Class", fields: [t("name", "Class", { required: true }), { key: "sectionIds", label: "Sections", type: "refMulti", collection: "sections", labelField: "name" }], list: ["name", "sectionIds"] },
@@ -143,6 +145,8 @@ export const ENTITIES = {
   sessions: { title: "Session", fields: [t("name", "Session", { required: true }), chk("active", "Active Session")], list: ["name", "active"] },
   roles: { title: "Roles", fields: [t("name", "Role", { required: true }), chk("system", "System Role"), ta("permissions", "Permissions (one per line)")], list: ["name", "system"] },
   custom_fields: { title: "Custom Fields", fields: [sel("belongsTo", "Field Belongs To", ["Student", "Staff"], { required: true }), sel("fieldType", "Field Type", ["Input", "Number", "Textarea", "Select", "Multiselect", "Checkbox", "Date", "Link"]), t("name", "Field Name", { required: true }), t("values", "Field Values (comma separated)"), num("gridColumn", "Grid (Bootstrap Column)"), chk("required", "Required"), chk("onTable", "On Table"), chk("visibleOnStudentPanel", "Visible On Student Panel")], list: ["belongsTo", "name", "fieldType", "required", "onTable"] },
+  languages: { title: "Languages", fields: [t("name", "Language", { required: true }), t("code", "Short Code"), t("countryCode", "Country Code"), chk("active", "Active"), chk("rtl", "RTL")], list: ["name", "code", "active", "rtl"] },
+  language_phrases: { title: "Language Phrases", fields: [ref("languageId", "Language", "languages", "name", { required: true }), t("key", "Key", { required: true }), ta("value", "Phrase")], list: ["languageId", "key", "value"] },
   file_types: { title: "File Types", fields: [t("name", "File Extension / MIME", { required: true }), num("maxSizeKb", "Max Size (KB)")], list: ["name", "maxSizeKb"] },
   portal_users: { title: "Users", fields: [t("name", "Name", { required: true }), t("username", "Username"), t("email", "Email"), sel("userType", "Role", ["student", "parent", "staff"]), ref("studentId", "Student", "students", "fullName"), sel("status", "Status", ["active", "disabled"])], list: ["name", "username", "email", "userType", "status"] },
   modules: { title: "Modules", fields: [t("name", "Module", { required: true }), chk("enabledSystem", "System"), chk("enabledStudent", "Student"), chk("enabledParent", "Parent")], list: ["name", "enabledSystem", "enabledStudent", "enabledParent"] },
@@ -154,7 +158,10 @@ function image(key, label, extra = {}) { return { key, label, type: "image", ...
 
 // ── Singletons (settings forms) ────────────────────────────────────────────────
 export const SETTINGS = {
-  general: { title: "General Setting", fields: [t("schoolName", "School Name", { required: true }), t("schoolCode", "School Code"), ta("address", "Address"), t("phone", "Phone"), t("email", "Email"), ref("sessionId", "Session", "sessions"), sel("sessionStartMonth", "Session Start Month", ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]), t("dateFormat", "Date Format"), t("timezone", "Timezone"), t("currency", "Currency"), t("currencySymbol", "Currency Symbol"), t("language", "Language"), chk("rtl", "Language RTL Text Mode"), t("taxOffice", "Tax Office / Registry"), t("companyNumber", "Number"), t("taxNumber", "Company Tax Number"), t("signatoryTitle", "Signatory Title"), t("signatoryName", "Signatory Name"), t("website", "Web Addresses"), t("gsm", "GSM"), image("logo", "Print Logo"), image("adminLogo", "Admin Logo"), image("headerLogoLeft", "Document Header Logo (Left)"), image("headerLogoCenter", "Document Header Logo (Center)"), image("headerLogoRight", "Document Header Logo (Right)"), ta("documentNotice", "Document Footer Notice (EN)"), ta("documentNoticeTr", "Document Footer Notice (TR)"), num("feeDueDays", "Fees Due Days"), chk("teacherRestricted", "Teacher Restricted Mode"), chk("onlineAdmission", "Online Admission"), t("mobileAppUrl", "Mobile App API URL")] },
+  general: { title: "General Setting", fields: [t("schoolName", "School Name", { required: true }), t("schoolCode", "School Code"), ta("address", "Address"), t("phone", "Phone"), t("email", "Email"), ref("sessionId", "Session", "sessions"), sel("sessionStartMonth", "Session Start Month", ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]), t("dateFormat", "Date Format"), t("timezone", "Timezone"), t("currency", "Currency"), t("currencySymbol", "Currency Symbol"), t("language", "Language"), chk("rtl", "Language RTL Text Mode"), t("taxOffice", "Tax Office / Registry"), t("companyNumber", "Number"), t("taxNumber", "Company Tax Number"), t("signatoryTitle", "Signatory Title"), t("signatoryName", "Signatory Name"), t("website", "Web Addresses"), t("gsm", "GSM"), sel("attendanceType", "Attendance", ["Day Wise", "Period Wise"]), chk("biometric", "Biometric Attendance"), t("biometricDevices", "Devices (Separate By Comma)"), sel("startDayOfWeek", "Start Day Of Week", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
+    chk("autoAdmissionNo", "Auto Admission No"), t("admissionNoPrefix", "Admission No Prefix"), num("admissionNoDigits", "Admission No Digit"), num("admissionNoStart", "Admission Start From"),
+    chk("autoStaffId", "Auto Staff ID"), t("staffIdPrefix", "Staff ID Prefix"), num("staffIdDigits", "Staff ID Digit"), num("staffIdStart", "Staff ID Start From"),
+    image("logo", "Print Logo"), image("adminLogo", "Admin Logo"), image("adminSmallLogo", "Admin Small Logo"), image("appLogo", "App Logo"), image("headerLogoLeft", "Document Header Logo (Left)"), image("headerLogoCenter", "Document Header Logo (Center)"), image("headerLogoRight", "Document Header Logo (Right)"), ta("documentNotice", "Document Footer Notice (EN)"), ta("documentNoticeTr", "Document Footer Notice (TR)"), num("feeDueDays", "Fees Due Days"), chk("teacherRestricted", "Teacher Restricted Mode"), chk("onlineAdmission", "Online Admission"), t("mobileAppUrl", "Mobile App API URL")] },
   print_header_footer: { title: "Print Header Footer", fields: [image("feeReceiptHeader", "Fees Receipt Header Image"), html("feeReceiptFooter", "Fees Receipt Footer"), image("payslipHeader", "Payslip Header Image"), html("payslipFooter", "Payslip Footer"), image("onlineAdmissionHeader", "Online Admission Receipt Header Image"), html("onlineAdmissionFooter", "Online Admission Receipt Footer")] },
   notification: { title: "Notification Setting", fields: [chk("studentAdmissionEmail", "Student Admission — Email"), chk("studentAdmissionSms", "Student Admission — SMS"), chk("feesSubmissionEmail", "Fees Submission — Email"), chk("feesSubmissionSms", "Fees Submission — SMS"), chk("absentAttendanceEmail", "Absent Attendance — Email"), chk("absentAttendanceSms", "Absent Attendance — SMS"), chk("examResultEmail", "Exam Result — Email"), chk("examResultSms", "Exam Result — SMS"), chk("loginCredentialEmail", "Login Credential — Email"), chk("loginCredentialSms", "Login Credential — SMS"), chk("homeworkEmail", "Homework — Email"), chk("feesReminderEmail", "Fees Reminder — Email"), chk("onlineAdmissionEmail", "Online Admission — Email"), ta("templates", "Templates / Notes")] },
   sms: { title: "SMS Setting", fields: [sel("gateway", "SMS Gateway", ["None", "Clickatell", "Twilio", "MSG91", "Text Local", "SMS Country", "Bulk SMS", "Custom"]), t("senderId", "Sender ID"), t("username", "Username / Account SID"), t("apiKey", "API Key / Auth Token (stored server-side only when wired up)"), t("phone", "Registered Phone"), chk("enabled", "Enabled")] },
@@ -170,9 +177,27 @@ export const SETTINGS = {
   online_course_setting: { title: "Online Course Setting", fields: [chk("guestLogin", "Guest User Login"), chk("guestPurchase", "Guest User Purchase"), html("aboutText", "About Text")] },
 };
 
-// ── Sidebar sections → tabs (mirrors the legacy menu, in the same order) ─────────
+// ── Sidebar sections → tabs. Mirrors the legacy sidebar item by item, in the same
+// order (see docs/LEGACY_PARITY.md for the one-to-one checklist). Tab options:
+//   entity / custom / singleton — what renders (see top of file)
+//   filter: { field: value }  — entity tabs that are a filtered view of a collection
+//                                (new records get these values too)
+//   title                      — heading override for an entity tab
 export const SECTIONS = [
+  { id: "front_office", icon: "🏢", label: "Front Office", tabs: [
+    { id: "enquiry", label: "Admission Enquiry", entity: "enquiries" },
+    { id: "visitors", label: "Visitor Book", entity: "visitors" },
+    { id: "calls", label: "Phone Call Log", entity: "phone_calls" },
+    { id: "dispatch", label: "Postal Dispatch", entity: "postal_dispatch" },
+    { id: "receive", label: "Postal Receive", entity: "postal_receive" },
+    { id: "complaints", label: "Complain", entity: "complaints" },
+    { id: "purpose", label: "Setup Front Office: Purpose", entity: "visitor_purposes" },
+    { id: "complaint_type", label: "Setup: Complaint Type", entity: "complaint_types" },
+    { id: "source", label: "Setup: Source", entity: "sources" },
+    { id: "reference", label: "Setup: Reference", entity: "references" },
+  ] },
   { id: "student_info", icon: "👥", label: "Student Information", tabs: [
+    { id: "all", label: "All Students", custom: "allStudents" },
     { id: "details", label: "Student Details", custom: "students" },
     { id: "admission", label: "Student Admission", custom: "studentAdmission" },
     { id: "online_admission", label: "Online Admission", entity: "online_admissions" },
@@ -184,7 +209,7 @@ export const SECTIONS = [
     { id: "disable_reasons", label: "Disable Reason", entity: "disable_reasons" },
   ] },
   { id: "documents", icon: "🔏", label: "Documents & QR", tabs: [
-    { id: "issued", label: "Issued Documents", custom: "documents" },
+    { id: "issued", label: "Issued Documents (Üst Yazı / belge doğrulama)", custom: "documents" },
     { id: "requests", label: "Document Requests", entity: "document_requests" },
     { id: "form_services", label: "Form Services", entity: "form_services" },
   ] },
@@ -201,27 +226,17 @@ export const SECTIONS = [
   ] },
   { id: "income", icon: "📈", label: "Income", tabs: [
     { id: "income", label: "Add Income", entity: "income" },
+    { id: "search", label: "Search Income", entity: "income", title: "Search Income" },
     { id: "heads", label: "Income Head", entity: "income_heads" },
   ] },
   { id: "expenses", icon: "📉", label: "Expenses", tabs: [
     { id: "expenses", label: "Add Expense", entity: "expenses" },
+    { id: "search", label: "Search Expense", entity: "expenses", title: "Search Expense" },
     { id: "heads", label: "Expense Head", entity: "expense_heads" },
-  ] },
-  { id: "front_office", icon: "🏢", label: "Front Office", tabs: [
-    { id: "enquiry", label: "Admission Enquiry", entity: "enquiries" },
-    { id: "visitors", label: "Visitor Book", entity: "visitors" },
-    { id: "calls", label: "Phone Call Log", entity: "phone_calls" },
-    { id: "dispatch", label: "Postal Dispatch", entity: "postal_dispatch" },
-    { id: "receive", label: "Postal Receive", entity: "postal_receive" },
-    { id: "complaints", label: "Complain", entity: "complaints" },
-    { id: "purpose", label: "Setup: Purpose", entity: "visitor_purposes" },
-    { id: "complaint_type", label: "Setup: Complaint Type", entity: "complaint_types" },
-    { id: "source", label: "Setup: Source", entity: "sources" },
-    { id: "reference", label: "Setup: Reference", entity: "references" },
   ] },
   { id: "attendance", icon: "🗓️", label: "Attendance", tabs: [
     { id: "student", label: "Student Attendance", custom: "studentAttendance" },
-    { id: "staff", label: "Staff Attendance", entity: "staff_attendance" },
+    { id: "by_date", label: "Attendance By Date", custom: "reportAttendance" },
   ] },
   { id: "exams", icon: "📝", label: "Examinations", tabs: [
     { id: "groups", label: "Exam Group", entity: "exam_groups" },
@@ -236,14 +251,17 @@ export const SECTIONS = [
   { id: "online_exams", icon: "💻", label: "Online Examinations", tabs: [
     { id: "exams", label: "Online Exam", entity: "online_exams" },
     { id: "questions", label: "Question Bank", entity: "questions" },
+    { id: "results", label: "Online Exam Results", entity: "online_exam_results" },
   ] },
   { id: "lesson_plan", icon: "📚", label: "Lesson Plan", tabs: [
     { id: "manage", label: "Manage Lesson Plan", entity: "syllabus" },
+    { id: "syllabus_status", label: "Manage Syllabus Status", entity: "topics", title: "Syllabus Status" },
     { id: "lessons", label: "Lesson", entity: "lessons" },
     { id: "topics", label: "Topic", entity: "topics" },
   ] },
   { id: "academics", icon: "🎓", label: "Academics", tabs: [
     { id: "timetable", label: "Class Timetable", entity: "timetables" },
+    { id: "teacher_timetable", label: "Teachers Timetable", entity: "timetables", title: "Teachers Timetable" },
     { id: "class_teacher", label: "Assign Class Teacher", entity: "class_teachers" },
     { id: "promote", label: "Promote Students", custom: "promoteStudents" },
     { id: "subject_groups", label: "Subject Group", entity: "subject_groups" },
@@ -252,20 +270,42 @@ export const SECTIONS = [
     { id: "sections", label: "Sections", entity: "sections" },
   ] },
   { id: "hr", icon: "🤝", label: "Human Resource", tabs: [
-    { id: "staff", label: "Staff Directory", entity: "staff" },
+    { id: "staff", label: "Staff Directory", entity: "staff", filter: { status: "active" } },
+    { id: "staff_attendance", label: "Staff Attendance", entity: "staff_attendance" },
     { id: "payroll", label: "Payroll", entity: "payroll" },
-    { id: "leave_requests", label: "Leave Requests", entity: "leave_requests" },
+    { id: "approve_leave", label: "Approve Leave Request", entity: "leave_requests", title: "Approve Leave Request" },
+    { id: "apply_leave", label: "Apply Leave", entity: "leave_requests", title: "Apply Leave", filter: { status: "pending" } },
     { id: "leave_types", label: "Leave Type", entity: "leave_types" },
     { id: "rating", label: "Teachers Rating", entity: "staff_ratings" },
     { id: "departments", label: "Department", entity: "departments" },
     { id: "designations", label: "Designation", entity: "designations" },
+    { id: "disabled_staff", label: "Disabled Staff", entity: "staff", title: "Disabled Staff", filter: { status: "disabled" } },
   ] },
   { id: "communicate", icon: "📣", label: "Communicate", tabs: [
     { id: "notices", label: "Notice Board", entity: "notices" },
     { id: "messages", label: "Send Email / SMS", entity: "messages" },
+    { id: "log", label: "Email / SMS Log", entity: "messages", title: "Email / SMS Log" },
+  ] },
+  { id: "online_course", icon: "▶️", label: "Online Course", tabs: [
+    { id: "courses", label: "Online Course", entity: "courses" },
+    { id: "lessons", label: "Course Lessons", entity: "course_lessons" },
+    { id: "offline_payment", label: "Offline Payment", entity: "course_payments" },
+    { id: "report", label: "Online Course Report", custom: "reportCourses" },
+    { id: "setting", label: "Setting", singleton: "online_course_setting" },
+  ] },
+  { id: "live_classes", icon: "📹", label: "Zoom Live Classes", tabs: [
+    { id: "classes", label: "Live Classes", entity: "live_classes" },
+    { id: "meetings", label: "Live Meeting", entity: "live_meetings" },
+    { id: "classes_report", label: "Live Classes Report", custom: "reportLiveClasses" },
+    { id: "meetings_report", label: "Live Meeting Report", custom: "reportLiveMeetings" },
+    { id: "setting", label: "Setting", singleton: "live_class_setting" },
   ] },
   { id: "downloads", icon: "⬇️", label: "Download Center", tabs: [
     { id: "contents", label: "Upload Content", entity: "contents" },
+    { id: "assignments", label: "Assignments", entity: "contents", title: "Assignments", filter: { type: "Assignments" } },
+    { id: "study_material", label: "Study Material", entity: "contents", title: "Study Material", filter: { type: "Study Material" } },
+    { id: "syllabus", label: "Syllabus", entity: "contents", title: "Syllabus", filter: { type: "Syllabus" } },
+    { id: "other", label: "Other Downloads", entity: "contents", title: "Other Downloads", filter: { type: "Other Download" } },
     { id: "homework", label: "Homework", entity: "homework" },
   ] },
   { id: "inventory", icon: "📦", label: "Inventory", tabs: [
@@ -275,17 +315,6 @@ export const SECTIONS = [
     { id: "categories", label: "Item Category", entity: "item_categories" },
     { id: "stores", label: "Item Store", entity: "item_stores" },
     { id: "suppliers", label: "Item Supplier", entity: "item_suppliers" },
-  ] },
-  { id: "online_course", icon: "▶️", label: "Online Course", tabs: [
-    { id: "courses", label: "Online Course", entity: "courses" },
-    { id: "lessons", label: "Course Lessons", entity: "course_lessons" },
-    { id: "offline_payment", label: "Offline Payment", entity: "course_payments" },
-    { id: "setting", label: "Setting", singleton: "online_course_setting" },
-  ] },
-  { id: "live_classes", icon: "📹", label: "Live Classes", tabs: [
-    { id: "classes", label: "Live Classes", entity: "live_classes" },
-    { id: "meetings", label: "Live Meeting", entity: "live_meetings" },
-    { id: "setting", label: "Setting", singleton: "live_class_setting" },
   ] },
   { id: "certificate", icon: "📜", label: "Certificate", tabs: [
     { id: "templates", label: "Student Certificate", custom: "certTemplates" },
@@ -298,7 +327,7 @@ export const SECTIONS = [
   { id: "front_cms", icon: "🖥️", label: "Front CMS", tabs: [
     { id: "events", label: "Event", entity: "cms_events" },
     { id: "gallery", label: "Gallery", entity: "cms_gallery" },
-    { id: "notice", label: "News / Notice", entity: "cms_notices" },
+    { id: "notice", label: "Notice", entity: "cms_notices" },
     { id: "media", label: "Media Manager", entity: "cms_media" },
     { id: "pages", label: "Pages", entity: "cms_pages" },
     { id: "menus", label: "Menus", entity: "cms_menus" },
@@ -313,14 +342,19 @@ export const SECTIONS = [
     { id: "finance", label: "Finance", custom: "reportFinance" },
     { id: "attendance", label: "Attendance", custom: "reportAttendance" },
     { id: "exams", label: "Examinations", custom: "reportExams" },
-    { id: "documents", label: "Documents", custom: "reportDocuments" },
+    { id: "online_exams", label: "Online Examinations", custom: "reportOnlineExams" },
+    { id: "lesson_plan", label: "Lesson Plan", custom: "reportLessonPlan" },
     { id: "hr", label: "Human Resource", custom: "reportHr" },
+    { id: "alumni", label: "Alumni", custom: "reportAlumni" },
+    { id: "documents", label: "Documents", custom: "reportDocuments" },
     { id: "user_log", label: "User Log", entity: "user_log" },
     { id: "audit", label: "Audit Trail Report", entity: "audit_log" },
   ] },
   { id: "system_settings", icon: "⚙️", label: "System Settings", tabs: [
-    { id: "general", label: "General Setting", singleton: "general" },
+    { id: "general", label: "General Settings", singleton: "general" },
     { id: "sessions", label: "Session Setting", entity: "sessions" },
+    { id: "document_requests", label: "Document Requests", entity: "document_requests" },
+    { id: "form_services", label: "Form Services", entity: "form_services" },
     { id: "notification", label: "Notification Setting", singleton: "notification" },
     { id: "sms", label: "SMS Setting", singleton: "sms" },
     { id: "email", label: "Email Setting", singleton: "email" },
@@ -329,7 +363,8 @@ export const SECTIONS = [
     { id: "front_cms", label: "Front CMS Setting", singleton: "front_cms" },
     { id: "roles", label: "Roles Permissions", entity: "roles" },
     { id: "backup", label: "Backup / Restore", custom: "backup" },
-    { id: "import", label: "Legacy Data Import", custom: "legacyImport" },
+    { id: "languages", label: "Languages", entity: "languages" },
+    { id: "phrases", label: "Language Phrases", entity: "language_phrases" },
     { id: "users", label: "Users", entity: "portal_users" },
     { id: "modules", label: "Modules", entity: "modules" },
     { id: "custom_fields", label: "Custom Fields", entity: "custom_fields" },
@@ -338,6 +373,8 @@ export const SECTIONS = [
     { id: "profile_update", label: "Student Profile Update", singleton: "student_profile_update" },
     { id: "online_admission", label: "Online Admission", singleton: "online_admission" },
     { id: "file_types", label: "File Types", entity: "file_types" },
+    { id: "import", label: "Legacy Data Import", custom: "legacyImport" },
+    { id: "update", label: "System Update", custom: "systemUpdate" },
   ] },
 ];
 

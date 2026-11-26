@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { getUserProfile } from "@/lib/firestore";
 import Link from "next/link";
 
@@ -60,6 +61,11 @@ export default function AdminLogin() {
         name: profile.name || "Super Admin",
         parentAgencyId: profile.parentAgencyId || null,
       }));
+
+      // User Log (legacy "User Log" report). Only Super Admin can write erp_*; best-effort.
+      if (profile.role === "super_admin") {
+        addDoc(collection(db, "erp_user_log"), { user: user.email, role: "Super Admin", ip: "", loginAt: new Date().toLocaleString("tr-TR"), userAgent: navigator.userAgent.slice(0, 160), createdAt: serverTimestamp() }).catch(() => {});
+      }
 
       router.push(dashboardPath);
     } catch (err) {

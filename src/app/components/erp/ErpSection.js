@@ -12,11 +12,15 @@ import { FeesCollect, FeesSearchPayment, FeesDue, FeesCarryForward } from "./Fee
 import Documents from "./Documents";
 import { CertTemplates, CertGenerate, IdCardTemplates, IdCardGenerate } from "./Certificates";
 import { StudentAttendance, PrintAdmitCard, PrintMarksheet } from "./Academic";
-import { ReportStudents, ReportFinance, ReportAttendance, ReportExams, ReportDocuments, ReportHr } from "./Reports";
-import { Backup, LegacyImport } from "./DataTools";
+import { ReportStudents, ReportFinance, ReportAttendance, ReportExams, ReportDocuments, ReportHr, ReportOnlineExams, ReportLessonPlan, ReportAlumni, ReportCourses, ReportLiveClasses, ReportLiveMeetings } from "./Reports";
+import { Backup, LegacyImport, SystemUpdate } from "./DataTools";
+import { AllStudents } from "./Students";
 
 const CUSTOM = {
-  students: StudentList, studentAdmission: StudentAdmission, disabledStudents: DisabledStudents,
+  allStudents: AllStudents, students: StudentList,
+  reportOnlineExams: ReportOnlineExams, reportLessonPlan: ReportLessonPlan, reportAlumni: ReportAlumni,
+  reportCourses: ReportCourses, reportLiveClasses: ReportLiveClasses, reportLiveMeetings: ReportLiveMeetings,
+  systemUpdate: SystemUpdate, studentAdmission: StudentAdmission, disabledStudents: DisabledStudents,
   multiClass: MultiClass, bulkDelete: BulkDelete, promoteStudents: PromoteStudents,
   feesCollect: FeesCollect, feesSearchPayment: FeesSearchPayment, feesDue: FeesDue, feesCarryForward: FeesCarryForward,
   documents: Documents,
@@ -41,7 +45,7 @@ export default function ErpSection({ sectionId }) {
     <div style={{ animation: "fadeIn 0.3s" }}>
       <h2 style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", margin: "0 0 16px" }}>{section.label}</h2>
       {section.tabs.length > 1 && <Tabs tabs={section.tabs} active={active.id} onChange={setTab} />}
-      {active.entity && <CrudTable key={active.entity} entityKey={active.entity} />}
+      {active.entity && <CrudTable key={active.id} entityKey={active.entity} title={active.title} filter={active.filter} />}
       {active.singleton && <SettingsForm key={active.singleton} settingsKey={active.singleton} />}
       {Custom && <Custom key={active.custom} />}
     </div>
